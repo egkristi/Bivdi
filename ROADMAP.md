@@ -1,8 +1,8 @@
 # Bivdi — Roadmap
 
-**Status:** Concept / planning. This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Dates, team sizes, and costs are rough estimates, not commitments. Only the items marked *Decided* in `README.md` §16 are binding.
+**Status:** Concept / planning. This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Only the items marked *Decided* in `README.md` §16 are binding. No timeline is estimated here — phases are ordered by dependency, not by date.
 
-**How to read this document:** each phase lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next phase begins — not an aspiration. Phase boundaries are deliberately fuzzy on dates but firm on gates.
+**How to read this document:** each phase lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next phase begins — not an aspiration. Phases are ordered by dependency and gated by outcomes, not by schedule.
 
 **Process:** resolving an open question in `README.md` §16–17, or making any non-trivial design decision, is recorded as an RFC in `rfcs/` *before* work that depends on it begins.
 
@@ -11,14 +11,14 @@
 ## Guiding principles for sequencing
 
 1. **Build the model first, the kernel second.** The differentiator is the object/capability/state model, not the kernel. The kernel is an implementation detail.
-2. **Every phase must ship value on its own.** A plan whose only payoff is in year five dies in year two.
+2. **Every phase must ship value on its own.** A plan whose only payoff is at the final phase dies before it gets there.
 3. **VM-first for hardware.** The hardest driver problems (GPU, Wi-Fi, suspend) are deliberately deferred behind the first cloud/VM milestone.
 4. **Two tracks, one contract.** Bivdi Runtime (Linux) and Bivdi Core (microkernel) advance in parallel against a shared IDL/API.
 5. **Security is a gate, not a feature.** Each phase has a security-relevant exit gate (fuzzing, audit, provenance).
 
 ---
 
-## Phase 0 — Foundation (months 0–6)
+## Phase 0 — Foundation
 
 **Goal.** Prove the core model is coherent and usable by a developer, on Linux, without a kernel.
 
@@ -42,7 +42,7 @@
 
 ---
 
-## Phase 1 — Agent host in a VM (months 6–18)
+## Phase 1 — Agent host in a VM
 
 **Goal.** Run a real AI-agent task inside Bivdi Core with delegated, time-limited capabilities, on a VM.
 
@@ -65,7 +65,7 @@
 
 ---
 
-## Phase 2 — Cloud and pilot customers (months 18–36)
+## Phase 2 — Cloud and pilot customers
 
 **Goal.** First external organization runs production workloads on Bivdi in a public cloud.
 
@@ -88,7 +88,7 @@
 
 ---
 
-## Phase 3 — Bare metal (years 3–5)
+## Phase 3 — Bare metal
 
 **Goal.** Bivdi runs on its own hardware with the same guarantees as in the cloud.
 
@@ -108,7 +108,7 @@
 
 ---
 
-## Phase 4 — Desktop (optional, years 5+)
+## Phase 4 — Desktop (optional)
 
 **Goal.** A usable desktop surface on one reference laptop — *if* funding and ecosystem warrant it.
 
@@ -155,13 +155,9 @@ These run across multiple phases and are not tied to a single milestone.
 
 ---
 
-## Effort and cost estimate
+## Effort and cost
 
-Synthesized from workgroup feasibility analysis; **rough** and dependent on seL4 ecosystem reuse:
-
-- **Team:** 1–2 (Phase 0) → 3–5 (Phase 1) → 10–15 (Phase 2) → 20–40 (Phase 3–4).
-- **Time to a mature, high-security niche platform:** ~4–5 years.
-- **Cost:** on the order of **$20–50M USD**.
+Deliberately left out. Bivdi is sequenced by dependency and gated by outcomes; staffing and cost are planning questions to revisit once the first phases prove the model, not numbers to commit to before any code exists.
 
 ---
 
