@@ -1,0 +1,44 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          for f in README.md AGENTS.md ARCHITECTURE.md CONTRIBUTING.md SECURITY.md ROADMAP.md; do
+            test -f "$f" || { echo "Missing required file: $f"; exit 1; }
+          done
+
+      - name: Check internal Markdown links resolve
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r -d '' file; do
+            dir="$(dirname "$file")"
+            while IFS= read -r target; do
+              [ -z "$target" ] && continue
+              case "$target" in
+                http://*|https://*|mailto:*|\#*|//*|ftp://*) continue ;;
+              esac
+              path="${target%%#*}"; path="${path%%\?*}"
+              [ -z "$path" ] && continue
+              if [ ! -e "$dir/$path" ]; then
+                echo "Broken link: $file -> $target"
+                fail=1
+              fi
+            done < <(grep -oE '\]\(([^)]+)\)' "$file" | sed -E 's/^\]\(//; s/\)$//')
+          done < <(find . -name '*.md' -not -path './temp/*' -print0)
+          exit "$fail"
