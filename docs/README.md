@@ -30,6 +30,9 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`provenance.md`](provenance.md) | ✅ Present | Authority-only audit log, integrity, query model. |
 | [`resources.md`](resources.md) | ✅ Present | Workloads, budgets, time-as-a-capability. |
 | [`boot-attestation.md`](boot-attestation.md) | ✅ Present | Measured boot and remote attestation. |
+| [`observability.md`](observability.md) | ✅ Present | Built-in metrics, tracing, correlation identity. |
+| [`performance.md`](performance.md) | ✅ Present | First-class performance; reference targets (proposed). |
+| [`recovery.md`](recovery.md) | ✅ Present | Declarative recovery and migration; no machine-state persistence. |
 
 ## Rule
 
