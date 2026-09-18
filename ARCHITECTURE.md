@@ -22,6 +22,7 @@ The architecture exists to satisfy eight goals, in priority order:
 6. **Compatibility without compromise** — legacy software is isolated, not privileged.
 7. **Observability by design** — authority, state, and events are queryable.
 8. **Portability** — the same model runs on Linux today and a microkernel tomorrow.
+9. **Performance as a first-class attribute** — designed in, measured, and regression-gated, never at the cost of the security model.
 
 ---
 
@@ -351,7 +352,32 @@ Observability is built in, not bolted on: metrics per component and workload; st
 
 ---
 
-## 20. Recovery and migration
+## 20. Performance
+
+Performance is a first-class, measurable attribute — designed in from the start and gated in CI, not optimized after the fact. It is never won by weakening the security model: isolation has an accepted, *budgeted* cost, and the goal is predictability within that budget rather than peak throughput at any price.
+
+Reference targets (proposed; to be ratified in spec v0.1 and turned into CI gates):
+
+| Metric | Target | Notes |
+|---|---|---|
+| IPC round trip (same core, ~4 words) | < 500 cycles | The microkernel cost center |
+| IPC round trip (cross-core) | < 2,000 cycles | |
+| Interrupt → userspace driver thread | < 3 µs | Adequate for realtime control |
+| Component instantiation (cold) | < 2 ms | Restart must feel instant |
+| Driver restart after fault | < 10 ms | Below human perception |
+| Boot: firmware → login | < 400 ms | |
+| Kernel static memory | < 1 MiB | |
+| Minimum useful system (kernel + object store + shell) | < 32 MiB RAM | |
+| Object-store sequential read | ≥ 85% of raw device | Storage overhead must be modest |
+| Object-store 4K random IOPS | ≥ 70% of raw device | |
+| Durable-token verification (5 caveats) | < 20 µs | Cheap enough to do per request |
+| Syscall-heavy workload vs. a monolithic kernel | within 30% | The accepted isolation tax |
+
+The last row frames the whole table: Bivdi accepts a measurable cost for isolation, and staying inside that budget is a hard requirement rather than an apology.
+
+---
+
+## 21. Recovery and migration
 
 - **Recovery is declarative:** "restore system generation 42", "restore user data snapshot X".
 - **Migration moves objects, identities, policies, workloads, and desired state** rather than requiring a machine to be rebuilt by hand.
@@ -359,7 +385,7 @@ Observability is built in, not bolted on: metrics per component and workload; st
 
 ---
 
-## 21. Open architectural questions
+## 22. Open architectural questions
 
 Recorded honestly as inputs to spec v0.1:
 

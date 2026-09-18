@@ -62,6 +62,7 @@ Ranked; when principles conflict, the higher one wins.
 10. **Compatibility without compromise.** Legacy software runs isolated; it never weakens the native model.
 11. **AI foreslår, OS håndhever.** AI proposes; the OS enforces. No agent gets more than it was delegated.
 12. **Portable, recoverable, observable by design.**
+13. **Performance is a first-class attribute.** Performance is designed in, measured, and regression-gated — but never won by weakening the security model.
 
 ---
 
@@ -295,6 +296,7 @@ Phases below synthesize the workgroup proposals; dates and team sizes are rough 
 | D-008 | Distribution is uniform, but network failure/latency is never hidden |
 | D-009 | GPU and Wi-Fi run in deprivileged **driver VMs** |
 | D-010 | **Crypto-shredding** for deletion in versioned storage |
+| D-011 | **Performance is a first-class attribute** — designed in, measured, and gated; never won by weakening the security model |
 
 ### Proposed (not yet final)
 

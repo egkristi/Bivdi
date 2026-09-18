@@ -42,6 +42,7 @@ Consult `README.md` §16. As of writing:
 - **Languages:** Rust for services, drivers, and the kernel; C/assembly only in the trusted core where required. Application-facing code targets WASI/WASM.
 - **Protocols:** define component interfaces in a language-neutral IDL; generate bindings rather than hand-writing ABI calls. The wire format is the contract, not a language calling convention.
 - **Security model:** every new capability, syscall, or manifest field must be traceable to the threat model. Changes that widen authority are treated as security changes and require explicit rationale.
+- **Performance is first-class:** performance-sensitive paths (IPC, object store, scheduling) have targets in `ARCHITECTURE.md` §20; regressions past them are treated as failures, never traded for weakening the security model.
 - **Licensing (proposed, pending decision):** kernel/ABI headers permissive (Apache-2.0 OR MIT); services/drivers MPL-2.0; docs CC BY 4.0. Do not introduce dependencies whose licenses conflict with this before the license decision is finalized.
 - **Attribution:** the Sámi name carries commitments (README §2). Never present the name as invented or as generic "Nordic" branding; preserve attribution text in docs.
 
@@ -73,3 +74,9 @@ rfcs/       all design decisions with rationale
 ## Build & test
 
 No build system exists yet. When the first code lands, establish (and document here) the canonical commands for build, test, lint, and fuzz, and keep them reproducible.
+
+## Version control
+
+- **Commit after major changes.** Commit when a major change, completed feature, or new version/release is done. Write a clear, single-purpose commit message.
+- **Push after committing.** Once committed, push to `origin main` (`git push`). Do not batch unrelated work into one commit.
+- **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` is excluded).
