@@ -43,7 +43,9 @@ Consult `README.md` §16. As of writing:
 - **Protocols:** define component interfaces in a language-neutral IDL; generate bindings rather than hand-writing ABI calls. The wire format is the contract, not a language calling convention.
 - **Security model:** every new capability, syscall, or manifest field must be traceable to the threat model. Changes that widen authority are treated as security changes and require explicit rationale.
 - **Performance is first-class:** performance-sensitive paths (IPC, object store, scheduling) have targets in `ARCHITECTURE.md` §20; regressions past them are treated as failures, never traded for weakening the security model.
-- **Licensing (proposed, pending decision):** kernel/ABI headers permissive (Apache-2.0 OR MIT); services/drivers MPL-2.0; docs CC BY 4.0. Do not introduce dependencies whose licenses conflict with this before the license decision is finalized.
+- **Licensing (decided, open core):** spec freely implementable; SDKs/ABI headers MIT OR Apache-2.0; Bivdi's own core/services/drivers MPL-2.0; docs CC BY 4.0; commercial/enterprise layer proprietary. Third-party code keeps its own license. See [`LICENSING.md`](LICENSING.md).
+- **Linux driver reuse is driver-VM-only.** Linux kernel driver code is GPLv2-only and must **never** be copied into Bivdi's own (MPL-2.0) components. Reuse of Linux drivers happens only inside an isolated driver VM. Do not introduce dependencies or code whose license conflicts with this.
+- **AI-generated code policy.** All committed code is human-reviewed/edited before landing; provenance of authorship is documented; purely machine-generated code is not placed in the proprietary commercial layer.
 - **Attribution:** the Sámi name carries commitments (README §2). Never present the name as invented or as generic "Nordic" branding; preserve attribution text in docs.
 
 ## Repository layout
