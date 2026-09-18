@@ -17,11 +17,11 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`attribution.md`](attribution.md) | ✅ Present | Sámi name meaning, pronunciation, and commitments. |
 | [`decisions.md`](decisions.md) | ✅ Present | Decision log (ADRs) for the decided items and the open proposals. |
 | [`glossary.md`](glossary.md) | ✅ Present | Terminology used across the project. |
-| `spec.md` | ⏳ Pending | Specification v0.1. Blocked on: IDL choice, object-store mutation semantics, capability-runtime attenuation/revocation model. |
-| `abi.md` | ⏳ Pending | The typed wire format / ABI. Blocked on: IDL choice. |
-| `manifest-schema.md` | ⏳ Pending | Workload/component manifest schema. Blocked on: component naming, kernel choice. |
-| `object-store-format.md` | ⏳ Pending | On-disk object-store format. Blocked on: storage primitive semantics. |
-| `token-format.md` | ⏳ Pending | Durable authority token format. Blocked on: component naming, kernel capability model. |
+| [`spec.md`](spec.md) | 📄 Draft | Specification v0.1 — the decided model. Open: IDL, object-store mutation semantics, capability-runtime revocation. |
+| [`abi.md`](abi.md) | 📄 Draft | ABI requirements — the *decided* principles. Open: which IDL and its encoding. |
+| [`manifest-schema.md`](manifest-schema.md) | 📄 Draft | Workload manifest — the *decided* conceptual model. Open: schema/encoding, naming. |
+| [`object-store-format.md`](object-store-format.md) | 📄 Draft | Object-store model — the *decided* primitives. Open: on-disk encoding, hash algorithm. |
+| [`token-format.md`](token-format.md) | 📄 Draft | Durable authority token — **proposed** model. Open: encoding, naming, kernel boundary. |
 
 ## Rule
 
