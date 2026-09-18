@@ -77,6 +77,35 @@ No build system exists yet. When the first code lands, establish (and document h
 
 ## Version control
 
-- **Commit after major changes.** Commit when a major change, completed feature, or new version/release is done. Write a clear, single-purpose commit message.
-- **Push after committing.** Once committed, push to `origin main` (`git push`). Do not batch unrelated work into one commit.
+Bivdi follows a GitHub issue-driven workflow. Every change traces back to an issue, every branch carries that issue's ID, every merge request links its issue, and merging is gated on CI.
+
+### Issues
+
+- **Everything starts from an issue.** Create the issue first; there is no change without an issue. All work is registered in GitHub Issues before any branch is created.
+- **Scope is single-purpose.** One issue = one concern. Break large efforts into separate issues.
+- **Use a template.** Give each issue a clear title, a description of the problem/motivation, and (where relevant) acceptance criteria and links to any open question in `README.md` §16–17.
+
+### Branches
+
+- **Branch from `main`, named with the issue ID.** Branch names follow `<type>/<issue-id>-<short-slug>`, e.g. `docs/5-agents-ci-gated-merges`, `fix/12-object-store-cas`, `feat/23-linux-abi-epoll`. The numeric part is the GitHub issue number — every branch carries its issue ID.
+- **One branch per issue.** Short-lived and single-purpose; do not batch unrelated work into one branch.
+- **Never push directly to `main`.** `main` is protected; all changes land via a merge/pull request (MR/PR).
+
+### Commits
+
+- **Conventional Commits.** Write messages as `type(scope): summary`, where `type` is one of `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, and `scope` is optional. Reference the issue in the message, e.g. `docs(workflow): enforce CI-gated merges (#5)`.
+- **Commit after major changes**, completed features, or new versions/releases — not arbitrary intervals.
 - **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` is excluded).
+
+### Merge requests (MRs/PRs)
+
+- **Every MR is linked to its issue.** Reference it in the description with `Closes #N` (or `Fixes #N` / `Resolves #N`) so merging the MR closes the issue. An MR without a linked issue is incomplete.
+- **One MR per issue**, targeting `main`.
+- **Describe the change** and how it meets the issue's acceptance criteria.
+- **Merge is blocked until CI passes.** All required status checks must be green before merge. Never merge a red or pending build.
+
+### CI/CD gate (applies once a pipeline exists)
+
+- **Required checks must pass.** The repository's CI (lint, build, test, and any security-relevant gates) must complete successfully before a merge is possible. This is enforced by branch protection on `main`.
+- **Don't bypass the gate.** If a check is flaky or misconfigured, fix the pipeline or file an issue — do not force-merge around it.
+- **No build system exists yet.** When the first code lands, establish the canonical commands for build, test, lint, and fuzz, wire them into CI, and document the required checks here.
