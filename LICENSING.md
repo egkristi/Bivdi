@@ -2,8 +2,6 @@
 
 **Status:** Decided strategy (`D-012`). This document states the licensing model, optimized for **maximal reach and commercial upside (sale)**. The exact license texts and the interface exception should be finalized with an IP lawyer; the structure below is authoritative.
 
-> **Not legal advice.** This document describes intent and structure. The CLA (not used), the interface exception, and any commercial terms must be drafted with a qualified intellectual-property lawyer before the first external contribution or the first sale.
-
 ---
 
 ## 1. The model: open core
