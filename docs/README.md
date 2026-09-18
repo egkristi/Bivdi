@@ -5,7 +5,7 @@ This directory holds the canonical technical documentation. Everything here is g
 ## What is certain vs. not
 
 - **Certain (decided):** the name and attribution, the security model (no ambient authority, capability-based, IOMMU required, crypto-shredding), the data/state/event model, WASI + Rust + language-neutral IDL, the two-track strategy, the VM-first driver target, no machine-state persistence, and performance-as-a-first-class-attribute.
-- **Proposed (not yet final):** kernel choice (seL4 proposed), target niche, component naming, license model, governance/RFC process.
+- **Proposed (not yet final):** kernel choice (seL4 proposed), target niche, component naming, governance/RFC process.
 
 **Component naming is deferred.** Use generic, descriptive terms ("object store", "capability runtime", "state engine", …). No codenames until a naming decision is recorded.
 
@@ -22,6 +22,9 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`manifest-schema.md`](manifest-schema.md) | 📄 Draft | Workload manifest — the *decided* conceptual model. Open: schema/encoding, naming. |
 | [`object-store-format.md`](object-store-format.md) | 📄 Draft | Object-store model — the *decided* primitives. Open: on-disk encoding, hash algorithm. |
 | [`token-format.md`](token-format.md) | 📄 Draft | Durable authority token — **proposed** model. Open: encoding, naming, kernel boundary. |
+| [`compatibility.md`](compatibility.md) | ✅ Present | Four-level compatibility model and the cannibalization response. |
+| [`networking.md`](networking.md) | ✅ Present | Identity-based networking, flow capabilities, distribution. |
+| [`ai-agents.md`](ai-agents.md) | ✅ Present | Agents as constrained citizens; the delegation model. |
 
 ## Rule
 
