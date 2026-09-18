@@ -32,7 +32,7 @@
   - **capability runtime** — mint, attenuate, lease, revoke, provenance
   - **state engine** — desired state, reconciliation, generations
 - A minimal developer SDK and CLI demonstrating the API end-to-end.
-- `rfcs/` seeded with the decisions already made (`D-001` … `D-010`) and the first RFCs for the open questions.
+- `rfcs/` seeded with the decisions already made (`D-001` … `D-012`) and the first RFCs for the open questions.
 
 **Exit gate.** A developer can, on a Linux machine: write a program against the Bivdi API, hand it an attenuated capability, run it, and query provenance for everything it wrote — with no code running outside a sandbox.
 
@@ -150,7 +150,7 @@ These run across multiple phases and are not tied to a single milestone.
 | **Scope explosion** (kernel + desktop + distributed + AI at once) | High | Model-first sequencing; explicit non-goals; phase gates |
 | **Powerbox usability** — capability systems have foundered on the human interface | High | User testing by Phase 3; a negative result changes the design, not the narrative |
 | **Overclaiming assurance** | High | "Verification-oriented" until proven; published audits including unfixed findings |
-| **Licensing conflict** (seL4 is GPLv2 vs. proposed permissive split) | Medium | Resolve license model (P-004) before Phase 1 Core commit |
+| **seL4 licensing interaction** (seL4 is GPLv2-only) | Medium | Open core (D-012) already isolates seL4 as a separate, non-resold component behind published interfaces; confirm no GPLv2 code is copied into MPL-2.0 components (driver-VM-only rule) |
 | **GPU acceleration vs. small TCB** | Medium | May be no way to have both; say so honestly if true |
 
 ---

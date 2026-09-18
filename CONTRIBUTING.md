@@ -22,17 +22,23 @@ If you are reporting a problem or proposing a change, the issue is the place to 
 ## 3. Branch and submit via MR
 
 - `main` is **protected**. Never push directly to `main`.
-- Create a short-lived, single-purpose branch named after its issue (e.g., `docs/issue-based-workflow`).
+- Create a short-lived, single-purpose branch named with its issue ID: `<type>/<issue-id>-<short-slug>` (e.g., `docs/5-agents-ci-gated-merges`, `fix/12-object-store-cas`).
 - One branch, one issue, one merge/pull request (MR/PR).
 - Open the MR into `main`; reference the issue with `Closes #N`.
+- An MR without a linked issue is incomplete.
 
 ## 4. Commit discipline
 
 - Commit after major changes, completed features, or new versions/releases.
-- Write a clear, single-purpose commit message.
+- Use **Conventional Commits**: `type(scope): summary`, where `type` is `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, or `ci`. Reference the issue (e.g., `docs(workflow): enforce CI-gated merges (#5)`).
 - Push the branch after committing and open the MR.
 - Do not batch unrelated work into one branch or MR.
 - Do not commit throwaway or generated artifacts; keep `.gitignore` accurate (`temp/` is currently excluded).
+
+## 4a. CI gate
+
+- Merging is **blocked until all required status checks pass** — this is enforced by branch protection on `main`.
+- Never merge a red or pending build, and never bypass the gate. If a check is flaky or misconfigured, fix the pipeline or file an issue.
 
 ## 5. Design decisions are RFCs
 
