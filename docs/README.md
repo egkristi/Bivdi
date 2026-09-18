@@ -25,6 +25,11 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`compatibility.md`](compatibility.md) | ✅ Present | Four-level compatibility model and the cannibalization response. |
 | [`networking.md`](networking.md) | ✅ Present | Identity-based networking, flow capabilities, distribution. |
 | [`ai-agents.md`](ai-agents.md) | ✅ Present | Agents as constrained citizens; the delegation model. |
+| [`identity.md`](identity.md) | ✅ Present | Identity kinds, petnames, selective disclosure. |
+| [`events.md`](events.md) | ✅ Present | Typed first-class events and correlation identity. |
+| [`provenance.md`](provenance.md) | ✅ Present | Authority-only audit log, integrity, query model. |
+| [`resources.md`](resources.md) | ✅ Present | Workloads, budgets, time-as-a-capability. |
+| [`boot-attestation.md`](boot-attestation.md) | ✅ Present | Measured boot and remote attestation. |
 
 ## Rule
 
