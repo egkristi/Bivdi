@@ -77,6 +77,9 @@ No build system exists yet. When the first code lands, establish (and document h
 
 ## Version control
 
+- **Everything starts from an issue.** Every change is tracked by a GitHub issue. Create the issue first, then branch from it. No change without an issue.
+- **`main` is protected.** Never push directly to `main`. All changes land via a merge/pull request (MR/PR).
+- **Branch from the issue.** Create a short-lived, single-purpose branch per issue, named after it (e.g., `docs/mr-based-workflow` → issue describing that work). One branch, one issue, one MR.
 - **Commit after major changes.** Commit when a major change, completed feature, or new version/release is done. Write a clear, single-purpose commit message.
-- **Push after committing.** Once committed, push to `origin main` (`git push`). Do not batch unrelated work into one commit.
+- **Push after committing.** Once committed, push the branch and open the MR. Do not batch unrelated work into one branch or MR.
 - **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` is excluded).
