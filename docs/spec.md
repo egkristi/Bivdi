@@ -10,7 +10,7 @@
 
 This specification defines the Bivdi **model** — the primitives, invariants, and semantics that are independent of the underlying substrate (Linux today, a microkernel tomorrow). It does *not* yet define the wire format, on-disk format, or concrete encodings; those are separate documents and are **open** (see §14).
 
-Normative: `decisions.md` (D-001 … D-011). Non-normative background: `ARCHITECTURE.md`, `ROADMAP.md`.
+Normative: `decisions.md` (D-001 … D-012). Non-normative background: `ARCHITECTURE.md`, `ROADMAP.md`.
 
 ---
 
