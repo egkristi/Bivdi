@@ -32,7 +32,7 @@ These are the load-bearing design commitments. Any code, doc, or proposal that c
 
 Consult `README.md` §16. As of writing:
 
-- **Decided:** name/domain; VM-engine-first driver target; two parallel tracks (Runtime on Linux + Core on microkernel); WASI as native app format; Rust + language-neutral IDL; IOMMU required; no persistence of running machine state; GPU/Wi-Fi in driver VMs; crypto-shredding for deletion.
+- **Decided:** name/domain; VM-engine-first driver target; two parallel tracks (Runtime on Linux + Core on microkernel); WASI as native app format; Rust + language-neutral IDL; IOMMU required; no persistence of running machine state; GPU/Wi-Fi in driver VMs; crypto-shredding for deletion; performance as a first-class attribute; open-core licensing.
 - **Proposed/open:** kernel choice (seL4 is the leading proposal); target niche; component naming; governance/RFC process.
 
 **Component naming is deferred.** Use generic, descriptive terms in code and docs — "object store", "capability runtime", "state engine", "event bus", "identity service", "agent host" — not evocative codenames or daemon-style abbreviations, until a naming decision is recorded.
