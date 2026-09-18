@@ -7,7 +7,7 @@
 
 - **Project:** Bivdi
 - **Domain:** [bivdi.com](https://bivdi.com)
-- **Status:** Concept / planning. Nothing is implemented. All estimates are rough.
+- **Status:** Concept / planning. Nothing is implemented.
 - **Document:** Project overview and decisions
 
 ---
@@ -266,17 +266,17 @@ Bivdi develops along two tracks sharing one interface contract (IDL) and one API
 
 ## 15. Roadmap
 
-Phases below synthesize the workgroup proposals; dates and team sizes are rough estimates.
+Phases below synthesize the workgroup proposals. They are ordered by dependency and gated by outcomes, not by schedule — no timeline is estimated here. See `ROADMAP.md` for full deliverables, exit gates, and dependencies.
 
-| Phase | Time | Content | Success criterion |
-|---|---|---|---|
-| **0 — Foundation** | 0–6 mo | Spec v0.1, threat model, IDL, Bivdi Runtime on Linux (object store, capability runtime, state engine) | A developer writes a program, grants an attenuated capability, sees provenance for everything it writes |
-| **1 — Agent host in a VM** | 6–18 mo | Bivdi Core on microkernel with virtio drivers, WASI runtime, agent host, provenance; runs on KVM/Firecracker | An agent runs a real task with delegated, time-limited capabilities; prompt injection gains nothing beyond the delegation |
-| **2 — Cloud & pilots** | 18–36 mo | ENA/gVNIC/MANA + NVMe drivers, attestation, cluster, Linux compatibility layer | ≥1 external org runs production workloads in a public cloud |
-| **3 — Bare metal** | 3–5 yr | Reference servers, driver VMs, micro-VM compatibility, more native drivers | Bivdi runs on its own hardware with the same guarantees |
-| **4 — Desktop (optional)** | 5+ yr | Reference laptop, graphical surface, Wayland proxy for legacy apps | Depends on funding |
+| Phase | Content | Success criterion |
+|---|---|---|
+| **0 — Foundation** | Spec v0.1, threat model, IDL, Bivdi Runtime on Linux (object store, capability runtime, state engine) | A developer writes a program, grants an attenuated capability, sees provenance for everything it writes |
+| **1 — Agent host in a VM** | Bivdi Core on microkernel with virtio drivers, WASI runtime, agent host, provenance; runs on KVM/Firecracker | An agent runs a real task with delegated, time-limited capabilities; prompt injection gains nothing beyond the delegation |
+| **2 — Cloud & pilots** | ENA/gVNIC/MANA + NVMe drivers, attestation, cluster, Linux compatibility layer | ≥1 external org runs production workloads in a public cloud |
+| **3 — Bare metal** | Reference servers, driver VMs, micro-VM compatibility, more native drivers | Bivdi runs on its own hardware with the same guarantees |
+| **4 — Desktop (optional)** | Reference laptop, graphical surface, Wayland proxy for legacy apps | Depends on funding |
 
-**Feasibility note.** The verified kernel is the *easy* part (seL4 already exists). The hard part is everything around it — ecosystem, compatibility, drivers, adoption. Fuchsia is the cautionary control experiment. Rough estimate for a mature niche platform: **20–40 people, 4–5 years, ~$20–50M USD**, depending heavily on seL4 ecosystem reuse.
+**Feasibility note.** The verified kernel is the *easy* part (seL4 already exists). The hard part is everything around it — ecosystem, compatibility, drivers, adoption. Fuchsia is the cautionary control experiment.
 
 ---
 
