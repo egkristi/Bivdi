@@ -21,6 +21,7 @@ This is the single source of truth for what is and is not decided. It mirrors `R
 | **D-009** | GPU and Wi-Fi run in deprivileged **driver VMs** | Their driver stacks are enormous and Linux-specific; isolation behind an IOMMU is the pragmatic answer (sledgehammer pattern). |
 | **D-010** | **Crypto-shredding** for deletion in versioned storage | History is immutable, so deletion is key destruction; satisfies "right to be forgotten" without rewriting history. |
 | **D-011** | **Performance is a first-class attribute** | Performance is designed in, measured, and regression-gated; never won by weakening the security model. |
+| **D-012** | **Open-core licensing** | Freely implementable spec; permissive SDKs (MIT OR Apache-2.0); MPL-2.0 for Bivdi's own core/services/drivers; proprietary commercial/enterprise layer; DCO (no CLA); interface exception. See `LICENSING.md`. |
 
 ---
 
@@ -31,7 +32,7 @@ This is the single source of truth for what is and is not decided. It mirrors `R
 | **P-001** | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) | Reuse a formally verified kernel vs. license (GPLv2) and control |
 | **P-002** | First target market / niche | Headless agent/server host vs. high-security workstation vs. personal node |
 | **P-003** | Component naming scheme | Evocative names vs. descriptive daemon-style names vs. deferred |
-| **P-004** | License model for Bivdi's own components and reused drivers | Permissive core + MPL-2.0 services vs. alternatives; interaction with seL4 GPLv2 |
+| ~~P-004~~ | ~~License model~~ → **resolved** as D-012 (open core) | See `LICENSING.md` |
 | **P-005** | Governance structure and RFC process | Technical-lead + RFC now; elected committee + foundation post-1.0 |
 
 ---

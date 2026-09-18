@@ -297,6 +297,7 @@ Phases below synthesize the workgroup proposals. They are ordered by dependency 
 | D-009 | GPU and Wi-Fi run in deprivileged **driver VMs** |
 | D-010 | **Crypto-shredding** for deletion in versioned storage |
 | D-011 | **Performance is a first-class attribute** — designed in, measured, and gated; never won by weakening the security model |
+| D-012 | **Open-core licensing**: freely implementable spec; permissive SDKs (MIT OR Apache-2.0); MPL-2.0 for Bivdi's own core/services/drivers; proprietary commercial/enterprise layer; DCO (no CLA); interface exception. See [`LICENSING.md`](LICENSING.md). |
 
 ### Proposed (not yet final)
 
@@ -305,7 +306,7 @@ Phases below synthesize the workgroup proposals. They are ordered by dependency 
 | P-001 | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) |
 | P-002 | First target market / niche |
 | P-003 | Component naming scheme |
-| P-004 | License model for Bivdi's own components and reused drivers |
+| ~~P-004~~ | ~~License model~~ → **resolved** as D-012 (open core). See [`LICENSING.md`](LICENSING.md). |
 | P-005 | Governance structure and RFC process |
 
 ---
@@ -349,13 +350,16 @@ bivdi/
 
 ## 19. License
 
-Open. A proposed split (final decision pending):
+**Open core** (`D-012`). See [`LICENSING.md`](LICENSING.md) for the full model. Summary:
 
-- Kernel and ABI headers: permissive (Apache-2.0 OR MIT)
-- System services and drivers: file-level copyleft (MPL-2.0)
-- Documentation: CC BY 4.0
+- **Specification:** freely implementable.
+- **SDKs, libraries, ABI headers:** MIT OR Apache-2.0 (dual).
+- **Bivdi's own core/services/drivers:** MPL-2.0.
+- **Third-party code (e.g., seL4):** its own license (seL4 is GPLv2-only).
+- **Documentation:** CC BY 4.0.
+- **Commercial/enterprise layer:** proprietary, sold separately.
 
-> Note: seL4's kernel is GPLv2; licensing of Bivdi's own components and reused drivers is an open decision (P-004).
+> seL4 (GPLv2-only) is never part of Bivdi's licensed core and is never resold; it is used as a separate component behind published interfaces.
 
 ---
 
