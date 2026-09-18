@@ -33,6 +33,9 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`observability.md`](observability.md) | ✅ Present | Built-in metrics, tracing, correlation identity. |
 | [`performance.md`](performance.md) | ✅ Present | First-class performance; reference targets (proposed). |
 | [`recovery.md`](recovery.md) | ✅ Present | Declarative recovery and migration; no machine-state persistence. |
+| [`capabilities.md`](capabilities.md) | ✅ Present | The capability model: properties, two tiers, powerbox, leases. |
+| [`state-engine.md`](state-engine.md) | ✅ Present | Declarative desired state, generations, reconciliation. |
+| [`drivers.md`](drivers.md) | ✅ Present | Driver strategy, VM-first target, tiers, isolation. |
 
 ## Rule
 
