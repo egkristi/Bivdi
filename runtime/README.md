@@ -6,7 +6,12 @@ The **Bivdi Runtime** is the Linux-hosted implementation of the Bivdi model — 
 
 ## Status
 
-Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core services, plus a CLI demo. **Not production software** — this exists to make the decided model concrete and testable.
+Phase 0 **complete**, and the Runtime half of Phase 1 **complete**. All six
+primitives (object, capability, state, event, identity, agent) are implemented
+with persistence, composed into an integrated node, and exercised by a WASI
+runtime and CLI demo. **This is a userspace prototype on Linux, not an operating
+system** — there is no kernel, no boot, and no VM guest. The microkernel half of
+Phase 1 is blocked on `P-001`.
 
 ## Crates
 
