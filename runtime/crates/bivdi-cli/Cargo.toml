@@ -1,0 +1,13 @@
+[package]
+name = "bivdi-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi Runtime CLI demo"
+
+[dependencies]
+bivdi-object = { path = "../bivdi-object" }
+bivdi-cap = { path = "../bivdi-cap" }
+bivdi-state = { path = "../bivdi-state" }
+serde_json.workspace = true
