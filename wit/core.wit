@@ -262,3 +262,16 @@ interface networking {
             -> option<flow>;
     }
 }
+
+/// The host-facing world: a Bivdi component imports these interfaces (the
+/// Runtime provides them). This is the shape the `wit-bindgen` bindings are
+/// generated from, and the shape any future Core must provide unchanged.
+world bivdi-core {
+    import objects;
+    import capabilities;
+    import state;
+    import events;
+    import identity;
+    import agents;
+    import networking;
+}
