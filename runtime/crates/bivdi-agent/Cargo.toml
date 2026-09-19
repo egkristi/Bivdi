@@ -1,14 +1,12 @@
 [package]
-name = "bivdi-cli"
+name = "bivdi-agent"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
-description = "Bivdi Runtime CLI demo"
+description = "Bivdi agent host: capability-constrained, time-limited, quota-bound agent execution"
 
 [dependencies]
-bivdi-object = { path = "../bivdi-object" }
 bivdi-cap = { path = "../bivdi-cap" }
-bivdi-state = { path = "../bivdi-state" }
-bivdi-agent = { path = "../bivdi-agent" }
+serde.workspace = true
 serde_json.workspace = true

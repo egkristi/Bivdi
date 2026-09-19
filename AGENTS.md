@@ -85,7 +85,7 @@ cargo clippy --workspace --all-targets -- -D warnings  # lint (CI gate)
 cargo fmt --all --check     # format check (CI gate)
 ```
 
-- **Rust workspace** under `runtime/`, crates `bivdi-object`, `bivdi-cap`, `bivdi-state`, `bivdi-cli`.
+- **Rust workspace** under `runtime/`, crates `bivdi-object`, `bivdi-cap`, `bivdi-state`, `bivdi-agent`, `bivdi-cli`.
 - CI runs `fmt`, `build`, `clippy` (deny warnings), and `test` on every PR to `main`.
 - `target/` is git-ignored; never commit build artifacts.
 
