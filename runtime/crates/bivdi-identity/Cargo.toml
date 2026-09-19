@@ -1,0 +1,12 @@
+[package]
+name = "bivdi-identity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi identity service: identity kinds, petnames, selective disclosure"
+
+[dependencies]
+bivdi-cap = { path = "../bivdi-cap" }
+serde.workspace = true
+serde_json.workspace = true

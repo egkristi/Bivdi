@@ -1,24 +1,26 @@
-//! Bivdi Runtime CLI — Phase 0 + Phase 1 (agent host) + event bus demo.
+//! Bivdi Runtime CLI — full six-primitive demo.
 //!
-//! Ties the object store, capability runtime, state engine, agent host, and
-//! event bus together to demonstrate the decided model.
+//! Ties the object store, capability runtime, state engine, agent host, event
+//! bus, and identity service together to demonstrate the decided model.
 
 use bivdi_agent::{AgentHost, Quota};
 use bivdi_cap::{CapRuntime, Lease, Resource, Right};
 use bivdi_event::{Event, EventBus, Filter};
+use bivdi_identity::{Identity, IdentityService, Kind};
 use bivdi_object::{blake3_hash, Store};
 use bivdi_state::{Action, DesiredState, StateEngine};
 use std::collections::BTreeMap;
 use std::time::Duration;
 
 fn main() {
-    println!("== Bivdi Runtime (Phase 0 + Phase 1 + event bus) ==\n");
+    println!("== Bivdi Runtime (six primitives) ==\n");
 
     demo_object_store();
     demo_capabilities();
     demo_state_engine();
     demo_agent_host();
     demo_event_bus();
+    demo_identity();
 
     println!("\nBivdi — nothing has ambient authority. Everything must ask.");
 }
@@ -212,6 +214,28 @@ fn demo_event_bus() {
     );
     println!("  total history = {}", bus.history().len());
     println!("  correlation id = {}", corr.0);
+    println!();
+}
+
+fn demo_identity() {
+    println!("-- Identity: petnames + selective disclosure --");
+    let mut svc = IdentityService::new();
+
+    let alice = Identity {
+        fingerprint: [7; 32],
+        claimed_name: "alice@example.com".into(),
+        kind: Kind::Person,
+    };
+    svc.register(alice.clone());
+    svc.assign_petname(&alice.fingerprint, "mom");
+    svc.set_attribute(&alice.fingerprint, "birth_year", "1990");
+
+    println!("  registered identity, claimed name hidden");
+    println!("  display name = {}", svc.display_name(&alice.fingerprint));
+    println!(
+        "  is_adult(2026) = {} (birth year not revealed)",
+        svc.is_adult(&alice.fingerprint, 2026)
+    );
     println!();
 }
 

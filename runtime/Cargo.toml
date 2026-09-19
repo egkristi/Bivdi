@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/bivdi-object", "crates/bivdi-cap", "crates/bivdi-state", "crates/bivdi-agent", "crates/bivdi-event", "crates/bivdi-cli"]
+members = ["crates/bivdi-object", "crates/bivdi-cap", "crates/bivdi-state", "crates/bivdi-agent", "crates/bivdi-event", "crates/bivdi-identity", "crates/bivdi-cli"]
 
 [workspace.package]
 version = "0.1.0"
