@@ -19,7 +19,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 | `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
 | `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
 | `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
-| `bivdi-wasm` | The **WASI runtime**: executes WASI components as native applications. |
+| `bivdi-wasm` | The **WASI runtime**: executes WASI modules with an explicit, least-authority capability context. |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)

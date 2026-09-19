@@ -8,6 +8,7 @@ description = "Bivdi WASI runtime: execute WASI components as native application
 
 [dependencies]
 wasmtime = "20"
+wasmtime-wasi = "20"
 
 [dev-dependencies]
 wat = "1"
