@@ -12,6 +12,18 @@ Compatibility is a *first-class subsystem*, not an afterthought. But it is *emul
 
 ---
 
+## 1a. Containers: deployment, not primitive (`D-013`)
+
+Bivdi is **container-friendly from the first executable runtime** — the Linux-hosted Runtime ships with a `Containerfile` so it can be built and run as an OCI image. Containers are a **deployment and compatibility convenience** for running Bivdi *on* Linux.
+
+Containers are **not** a Bivdi primitive:
+
+- Containers are a Linux kernel feature (namespaces + cgroups). Bivdi's own isolation model is **capabilities**, not kernel namespaces — a Bivdi workload is not a container, and a container is not a Bivdi security boundary.
+- When legacy software is run via the Linux ABI or a micro-VM, OCI images may be used as a packaging/transport format, but the authority a workload holds is still a Bivdi capability set, never the container's namespace isolation.
+- The compatibility layer may *run* containers as guests; it does not *adopt* them as the native model.
+
+---
+
 ## 2. The four levels
 
 | Level | Mechanism | Compatibility | Integration |

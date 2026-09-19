@@ -27,6 +27,7 @@ These are the load-bearing design commitments. Any code, doc, or proposal that c
 6. **AI without unrestricted authority.** Agents are capability-constrained, time-limited, quota-bound, and fully provenance-logged. "AI proposes, the OS enforces."
 7. **Small trusted core.** Whatever must be correct to keep the system secure must be small enough to prove.
 8. **IOMMU required.** Hardware without IOMMU is unsupported.
+9. **Container-friendly, not container-primitive.** The runtime must run in a container from the first executable; containers are a deployment/compatibility concern and never become an architectural or security primitive.
 
 ## Decided vs. open
 
