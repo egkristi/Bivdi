@@ -121,6 +121,7 @@ Bivdi follows a GitHub issue-driven workflow. Every change traces back to an iss
 ### Commits
 
 - **Conventional Commits.** Write messages as `type(scope): summary`, where `type` is one of `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, and `scope` is optional. Reference the issue in the message, e.g. `docs(workflow): enforce CI-gated merges (#5)`.
+- **Sign off (DCO).** Add a `Signed-off-by:` trailer to every commit (`git commit -s`). This enforces the DCO commitment in `LICENSING.md` §3 and is verified in CI.
 - **Commit after major changes**, completed features, or new versions/releases — not arbitrary intervals.
 - **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` and `runtime/target/` are excluded).
 
@@ -133,5 +134,5 @@ Bivdi follows a GitHub issue-driven workflow. Every change traces back to an iss
 
 ### CI/CD gate
 
-- **Required checks must pass.** Two workflows gate every PR to `main`: `docs.yml` (validate required files + internal Markdown links) and `rust.yml` (fmt, build, clippy `-D warnings`, test). This is enforced by branch protection on `main` (1 required review + enforce-admins).
+- **Required checks must pass.** Three workflows gate every PR to `main`: `docs.yml` (validate required files + internal Markdown links), `rust.yml` (fmt, build, clippy `-D warnings`, test, MSRV check, security advisories), and `dco.yml` (DCO sign-off). This is enforced by branch protection on `main` (1 required review + enforce-admins).
 - **Don't bypass the gate.** If a check is flaky or misconfigured, fix the pipeline or file an issue — do not force-merge around it.
