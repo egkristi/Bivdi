@@ -55,17 +55,36 @@ pub struct Plan {
 }
 
 /// An agent, holding a capability set, a lease, and a quota.
+///
+/// The decided model (`docs/ai-agents.md` §4) gives an agent *several*
+/// capabilities — e.g. write to one calendar entry **and** read to one email
+/// thread. This struct therefore holds a **set** of capabilities (one per
+/// resource), not a single one (H3).
 #[derive(Debug, Clone)]
 pub struct Agent {
     pub id: u64,
-    /// The capability this agent holds over its single resource (attenuated).
-    capability: Capability,
-    /// The (possibly narrower) rights the agent may actually exercise.
-    effective_right: Rights,
+    /// The capabilities this agent holds, each over a distinct resource.
+    caps: Vec<Capability>,
     lease: Lease,
     quota: Quota,
     actions_used: u64,
     delegations_used: u64,
+}
+
+impl Agent {
+    /// The capability this agent holds over `resource`, if any.
+    fn cap_for(&self, resource: Resource) -> Option<&Capability> {
+        self.caps.iter().find(|c| c.resource() == resource)
+    }
+
+    /// The union of rights this agent may exercise across all its capabilities.
+    /// Used for the delegation-escalation check: an agent may only delegate a
+    /// right it holds over *some* resource.
+    fn max_right(&self) -> Rights {
+        self.caps
+            .iter()
+            .fold(Rights::NONE, |acc, c| acc | c.right())
+    }
 }
 
 /// Errors from agent-host operations.
@@ -140,13 +159,34 @@ impl AgentHost {
         self.next_agent_id += 1;
         Ok(Agent {
             id,
-            capability,
-            effective_right: right,
+            caps: vec![capability],
             lease: Lease::new(ttl),
             quota,
             actions_used: 0,
             delegations_used: 0,
         })
+    }
+
+    /// Grant an additional capability to an existing agent, attenuated from a
+    /// source the caller holds. This is how one agent comes to hold *several*
+    /// capabilities (write to the calendar **and** read to the document),
+    /// matching the decided model in `docs/ai-agents.md` §4 (H3).
+    pub fn grant(
+        &mut self,
+        agent: &mut Agent,
+        source: &Capability,
+        right: Rights,
+    ) -> Result<(), AgentError> {
+        // Reject escalation: the granted right must be a subset of the source.
+        let capability = self
+            .runtime
+            .attenuate(source, right)
+            .map_err(|_| AgentError::NotAuthorized)?;
+        // One capability per resource; a second grant over the same resource
+        // replaces the first (narrowing, never widening, is fine).
+        agent.caps.retain(|c| c.resource() != capability.resource());
+        agent.caps.push(capability);
+        Ok(())
     }
 
     /// Execute one plan step on behalf of an agent. This is the enforcement
@@ -165,10 +205,9 @@ impl AgentHost {
         if agent.actions_used >= agent.quota.max_actions {
             return Err(AgentError::QuotaExceeded);
         }
-        if !self
-            .runtime
-            .record_use(&agent.capability, resource, required)
-        {
+        // Find the capability over this resource; if none, deny.
+        let cap = agent.cap_for(resource).ok_or(AgentError::NotAuthorized)?;
+        if !self.runtime.record_use(cap, resource, required) {
             return Err(AgentError::NotAuthorized);
         }
         agent.actions_used += 1;
@@ -194,7 +233,7 @@ impl AgentHost {
         if from.delegations_used >= from.quota.max_delegations {
             return Err(AgentError::QuotaExceeded);
         }
-        if !from.effective_right.contains(right) {
+        if !from.max_right().contains(right) {
             return Err(AgentError::EscalationDenied);
         }
         // Clamp time and quota to what the delegator has left.
@@ -212,11 +251,20 @@ impl AgentHost {
         from.delegations_used += 1;
         let id = self.next_agent_id;
         self.next_agent_id += 1;
-        let capability = self.runtime.attenuate(&from.capability, right).unwrap();
+        // The child is delegated the *same* capability set as the parent, but
+        // with the rights each capability grants narrowed to `right` where it
+        // is a subset — otherwise the capability is dropped.
+        let caps: Vec<Capability> = from
+            .caps
+            .iter()
+            .filter_map(|c| {
+                let subset = c.right().intersection(right);
+                self.runtime.attenuate(c, subset).ok()
+            })
+            .collect();
         Ok(Agent {
             id,
-            capability,
-            effective_right: right,
+            caps,
             lease: Lease::new(child_ttl),
             quota: child_quota,
             actions_used: 0,
@@ -277,7 +325,7 @@ mod tests {
                 Quota::new(10, 0),
             )
             .unwrap();
-        assert_eq!(agent.effective_right, Rights::READ);
+        assert_eq!(agent.max_right(), Rights::READ);
         // The agent cannot act with Write.
         let mut agent = agent;
         assert!(matches!(
@@ -488,6 +536,42 @@ mod tests {
         };
         assert!(matches!(
             h.execute_plan(&mut agent, &plan),
+            Err(AgentError::NotAuthorized)
+        ));
+    }
+
+    /// One agent can hold *several* capabilities over distinct resources, as
+    /// the decided model requires ("write to one calendar entry **and** read to
+    /// one email thread"). This is the H3 fix made concrete.
+    #[test]
+    fn one_agent_holds_multiple_capabilities() {
+        let calendar = Resource(42);
+        let document = Resource(43);
+        let (mut h, cal_root) = host_with_root(calendar, Rights::ALL);
+        let doc_root = h.mint_root(document, Rights::ALL);
+
+        // One agent, two grants: write over the calendar, read over the doc.
+        let mut agent = h
+            .spawn(
+                &cal_root,
+                Rights::WRITE,
+                Duration::from_secs(600),
+                Quota::new(20, 0),
+            )
+            .unwrap();
+        h.grant(&mut agent, &doc_root, Rights::READ).unwrap();
+
+        // Within each grant it can act…
+        assert!(h.execute(&mut agent, calendar, Rights::WRITE).is_ok());
+        assert!(h.execute(&mut agent, document, Rights::READ).is_ok());
+        // …but not outside: write on the document (read-only) is denied.
+        assert!(matches!(
+            h.execute(&mut agent, document, Rights::WRITE),
+            Err(AgentError::NotAuthorized)
+        ));
+        // …and a resource it was never granted is denied entirely.
+        assert!(matches!(
+            h.execute(&mut agent, Resource(99), Rights::READ),
             Err(AgentError::NotAuthorized)
         ));
     }

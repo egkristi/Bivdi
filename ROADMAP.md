@@ -61,7 +61,7 @@ The gate has four clauses, mapped from the original Phase 0.
 | State engine | Desired state, reconciliation, immutable generations, rollback |
 | Event bus | In-memory: typed events, filters, correlation ids |
 | Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
-| Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
+| Agent host | Capability-constrained, leased, quota-bound agents; plan execution; **holds a capability set** (one agent, multiple resources — `H3`) |
 | Provenance query interface | **Done, in-process + hash-chained** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability`, plus a hash-chained log with `verify_chain()` (`H4` append-only/chaining now implemented; Merkle epochs and signed roots remain future). |
 | Hardening (seccomp + Landlock) | **In progress** — seccomp now has an arch check (`C2`), is applied process-wide with `TSYNC` (`H2`), and the allowlist drops network/`execve`/`clone` (`C1`); an escape test asserts the denials (`M5`); `engage_strict()` makes degraded hardening a policy decision (`H1`). Landlock still `EPERM`s in containers (best-effort). |
 | Developer SDK and CLI | CLI demo only. **No SDK** |
@@ -76,7 +76,7 @@ The gate has four clauses, mapped from the original Phase 0.
 4. **Fix `NetService::resolve`** — **done** (`C3`): resolution now requires a namespace capability and attenuates from it; `grant_flow` binds the endpoint to the capability's resource (`M6`).
 5. **Make degraded hardening a policy decision** — **done** (`H1`): `engage_strict()` returns `Err` unless fully hardened.
 6. **Give the provenance log hash-chaining** — **done** (`H4`, append-only + chaining + `verify_chain`); durability and signed epochs remain future.
-7. **Give `Agent` a capability set** (`H3`) and rewrite the §3.4 scenario as one agent holding two capabilities, with clauses 1 and 4 asserted not commented (`M4`).
+7. **Give `Agent` a capability set** (`H3`) — **done**: `Agent` now holds `Vec<Capability>`; `AgentHost::grant` and `Node::grant_agent` add grants; the §3.4 scenario is one agent holding two capabilities, with the denial clauses asserted (`M4`).
 8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee).
 9. **Clear the overclaiming language in one pass** (`P3`/`P4`, `M2`/`M3`/`M7`/`M8`).
 10. **Make the other three CI jobs required** (`P2`) and resolve RFC 0003's deferral (`P8`).
