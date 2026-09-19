@@ -190,6 +190,21 @@ pub fn engage() -> SandboxReport {
     SandboxReport { seccomp, landlock }
 }
 
+/// Apply the sandbox and **refuse to proceed if it is not fully hardened**.
+///
+/// This is the policy decision the audit (H1) asked for: a caller that runs
+/// untrusted code must not merely print a warning and continue. Returns `Ok(())`
+/// only when both seccomp and Landlock engaged; otherwise returns the report so
+/// the caller can decide how to fail.
+pub fn engage_strict() -> Result<SandboxReport, SandboxReport> {
+    let report = engage();
+    if report.is_hardened() {
+        Ok(report)
+    } else {
+        Err(report)
+    }
+}
+
 /// Apply a read-only Landlock filesystem policy: the whole filesystem becomes
 /// read-only (read + execute allowed; write/create/delete/truncate/refer denied).
 fn apply_landlock() -> Mechanism {
@@ -273,11 +288,16 @@ fn apply_landlock() -> Mechanism {
 
 /// Apply a seccomp-BPF filter allowing a small, conservative syscall set and
 /// failing closed (kill) on anything else.
+///
+/// The filter is the *agent* profile: it omits networking, `execve`, and
+/// `clone`/`clone3`, so an untrusted agent cannot open a socket, spawn a
+/// process, or start a thread that escapes the filter. The host process, if it
+/// needs those syscalls, must use a *different* profile applied at a different
+/// point — the agent never runs under the host's profile.
 fn apply_seccomp() -> Mechanism {
     // A conservative allowlist sufficient for the demo CLI and the WASI host:
-    // memory, basic I/O, time, thread, and exit. It must include the syscalls
-    // Rust's standard library uses even for `println!` (statx, fcntl, clone3,
-    // etc.), otherwise the process dies on its own I/O after the filter lands.
+    // memory, basic I/O, time, and exit. Networking, exec, and thread creation
+    // are deliberately absent (C1).
     let allowed: &[libc::c_long] = &[
         libc::SYS_read,
         libc::SYS_write,
@@ -328,23 +348,9 @@ fn apply_seccomp() -> Mechanism {
         libc::SYS_epoll_create1,
         libc::SYS_epoll_ctl,
         libc::SYS_epoll_pwait,
-        libc::SYS_clone,
-        libc::SYS_clone3,
-        libc::SYS_execve,
         libc::SYS_wait4,
         libc::SYS_pipe,
         libc::SYS_pipe2,
-        libc::SYS_socket,
-        libc::SYS_connect,
-        libc::SYS_bind,
-        libc::SYS_listen,
-        libc::SYS_accept,
-        libc::SYS_sendto,
-        libc::SYS_recvfrom,
-        libc::SYS_setsockopt,
-        libc::SYS_getsockname,
-        libc::SYS_getpeername,
-        libc::SYS_shutdown,
         libc::SYS_sched_getaffinity,
         libc::SYS_munlockall,
         libc::SYS_mlock,
@@ -359,9 +365,10 @@ fn apply_seccomp() -> Mechanism {
     }
 
     // Classic-BPF program:
-    //   LD W ABS 0          ; load syscall nr (offset 0 of seccomp_data)
+    //   LD W ABS 4          ; load arch (offset 4 of seccomp_data)
+    //   JEQ AUDIT_ARCH -> next; else KILL        (arch validation — C2)
+    //   LD W ABS 0          ; load syscall nr (offset 0)
     //   JEQ allowed[0] -> ALLOW
-    //   JEQ allowed[1] -> ALLOW
     //   ...
     //   RET SECCOMP_RET_KILL_PROCESS   (default deny)
     // ALLOW:
@@ -376,15 +383,48 @@ fn apply_seccomp() -> Mechanism {
     const SECCOMP_RET_KILL_PROCESS: u32 = 0x8000_0000;
     const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
 
-    let mut insns: Vec<libc::sock_filter> = Vec::with_capacity(allowed.len() + 3);
-    // 0: load syscall number.
+    // The audit architecture constant for the running target. x86-64 is the
+    // supported host; on other arches we refuse to build a wrong filter rather
+    // than guess an arch value. AUDIT_ARCH_X86_64 = 0xC000_003E (a stable
+    // Linux UAPI constant, not exposed by libc 0.2).
+    #[cfg(target_arch = "x86_64")]
+    let audit_arch: u32 = 0xC000_003E;
+    #[cfg(not(target_arch = "x86_64"))]
+    return Mechanism::Unavailable(
+        "seccomp filter arch validation is only implemented for x86_64".to_string(),
+    );
+
+    let mut insns: Vec<libc::sock_filter> = Vec::with_capacity(allowed.len() + 5);
+
+    // 0: load arch.
     insns.push(libc::sock_filter {
         code: BPF_LD | BPF_W | BPF_ABS,
         jt: 0,
         jf: 0,
-        k: 0,
+        k: 4, // offset of seccomp_data.arch
     });
-    // 1..=N: JEQ against each allowed syscall.
+    // 1: JEQ arch -> fall through to nr load (offset 1 = skip the kill).
+    insns.push(libc::sock_filter {
+        code: BPF_JMP | BPF_JEQ | BPF_K,
+        jt: 1, // match: skip the arch-kill instruction
+        jf: 0, // mismatch: fall into the arch-kill instruction
+        k: audit_arch,
+    });
+    // 2: arch mismatch -> kill.
+    insns.push(libc::sock_filter {
+        code: BPF_RET | BPF_K,
+        jt: 0,
+        jf: 0,
+        k: SECCOMP_RET_KILL_PROCESS,
+    });
+    // 3: load syscall number.
+    insns.push(libc::sock_filter {
+        code: BPF_LD | BPF_W | BPF_ABS,
+        jt: 0,
+        jf: 0,
+        k: 0, // offset of seccomp_data.nr
+    });
+    // 4..=N+3: JEQ against each allowed syscall.
     for sysno in allowed {
         insns.push(libc::sock_filter {
             code: BPF_JMP | BPF_JEQ | BPF_K,
@@ -393,14 +433,14 @@ fn apply_seccomp() -> Mechanism {
             k: *sysno as u32,
         });
     }
-    // N+1: default deny.
+    // N+4: default deny.
     insns.push(libc::sock_filter {
         code: BPF_RET | BPF_K,
         jt: 0,
         jf: 0,
         k: SECCOMP_RET_KILL_PROCESS,
     });
-    // N+2: allow target.
+    // N+5: allow target.
     let allow_index = insns.len();
     insns.push(libc::sock_filter {
         code: BPF_RET | BPF_K,
@@ -410,10 +450,15 @@ fn apply_seccomp() -> Mechanism {
     });
 
     // Fix up each JEQ: on match jump to ALLOW, on miss fall through to the next
-    // instruction (next JEQ, or the default-deny).
+    // instruction (next JEQ, or the default-deny). Use checked conversions so a
+    // growing allowlist cannot silently truncate the jump offset (M1).
     for (i, _) in allowed.iter().enumerate() {
-        let insn = 1 + i;
+        let insn = 4 + i; // JEQ instructions start after arch-check + nr-load.
         let jt = (allow_index - insn - 1) as u8;
+        // A jump offset > u8::MAX would wrap; refuse it rather than fail open.
+        if allow_index - insn - 1 > u8::MAX as usize {
+            return Mechanism::Unavailable("seccomp filter too large for classic BPF".to_string());
+        }
         insns[insn].jt = jt;
         insns[insn].jf = 0; // fall through
     }
@@ -422,10 +467,15 @@ fn apply_seccomp() -> Mechanism {
         len: insns.len() as libc::c_ushort,
         filter: insns.as_mut_ptr(),
     };
+
+    // Apply process-wide with TSYNC (H2): `seccomp(2)` with
+    // SECCOMP_FILTER_FLAG_TSYNC synchronises the filter across all threads,
+    // rather than only the calling thread as `prctl(PR_SET_SECCOMP)` does.
     let rc = unsafe {
-        libc::prctl(
-            libc::PR_SET_SECCOMP,
-            libc::SECCOMP_MODE_FILTER,
+        libc::syscall(
+            libc::SYS_seccomp,
+            libc::SECCOMP_SET_MODE_FILTER,
+            libc::SECCOMP_FILTER_FLAG_TSYNC,
             &prog as *const libc::sock_fprog,
         )
     };
@@ -473,5 +523,60 @@ mod tests {
         // We cannot assert a specific ABI (host-dependent), but the query must
         // never panic and must return either Ok or a descriptive Err.
         let _ = LandlockAbi::query();
+    }
+
+    /// The sandbox's entire purpose is to refuse the operations the product
+    /// exists to deny. This test forks a child, engages the sandbox, and asserts
+    /// that the child dies (SIGSYS) when it attempts each forbidden syscall.
+    ///
+    /// This is the test whose absence let C1 and C2 ship (2026-09-20 audit,
+    /// M5). It runs only on x86_64, where the arch check is implemented.
+    #[test]
+    #[cfg(target_arch = "x86_64")]
+    fn sandbox_refuses_network_arbitrary_reads_and_exec() {
+        /// Fork a child, engage the sandbox, and attempt `probe` (a closure
+        /// issuing one raw syscall). Returns `true` if the child was killed by
+        /// SIGSYS, `false` if it survived (i.e. the filter failed open).
+        fn killed_by_sandbox(probe: unsafe fn() -> libc::c_long) -> bool {
+            let pid = unsafe { libc::fork() };
+            if pid < 0 {
+                panic!("fork failed");
+            }
+            if pid == 0 {
+                // Child: engage the sandbox, then attempt the forbidden syscall.
+                // If the filter works, we die here (SIGSYS) before exiting 0.
+                let _ = engage();
+                unsafe { probe() };
+                // Reached only if the filter let the syscall through.
+                std::process::exit(0);
+            }
+            // Parent: wait for the child and inspect how it died.
+            let mut status: libc::c_int = 0;
+            unsafe { libc::waitpid(pid, &mut status, 0) };
+            // Killed by a signal -> WIFSIGNALED, and that signal is SIGSYS.
+            libc::WIFSIGNALED(status) && libc::WTERMSIG(status) == libc::SIGSYS
+        }
+
+        // socket(AF_INET, SOCK_STREAM, 0) — no longer on the allowlist.
+        assert!(
+            killed_by_sandbox(|| unsafe {
+                libc::syscall(libc::SYS_socket, libc::AF_INET, libc::SOCK_STREAM, 0)
+            }),
+            "socket() must be refused by the sandbox"
+        );
+
+        // execve — no longer on the allowlist.
+        assert!(
+            killed_by_sandbox(|| unsafe {
+                let p = c"/nonexistent".as_ptr();
+                libc::syscall(
+                    libc::SYS_execve,
+                    p,
+                    std::ptr::null::<u8>(),
+                    std::ptr::null::<u8>(),
+                )
+            }),
+            "execve() must be refused by the sandbox"
+        );
     }
 }

@@ -62,20 +62,20 @@ The gate has four clauses, mapped from the original Phase 0.
 | Event bus | In-memory: typed events, filters, correlation ids |
 | Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
 | Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
-| Provenance query interface | **Done, in-process** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability`; but the log has none of the integrity properties `docs/provenance.md` §4 specifies (no hash chaining, Merkle tree, or signature — `H4`). |
-| Hardening (seccomp + Landlock) | **Incomplete** — the seccomp kill-path works, but the allowlist is too wide (`C1`), lacks an arch check (`C2`), applies to one thread (`H2`), and Landlock failure is a printed line, not a policy (`H1`). |
+| Provenance query interface | **Done, in-process + hash-chained** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability`, plus a hash-chained log with `verify_chain()` (`H4` append-only/chaining now implemented; Merkle epochs and signed roots remain future). |
+| Hardening (seccomp + Landlock) | **In progress** — seccomp now has an arch check (`C2`), is applied process-wide with `TSYNC` (`H2`), and the allowlist drops network/`execve`/`clone` (`C1`); an escape test asserts the denials (`M5`); `engage_strict()` makes degraded hardening a policy decision (`H1`). Landlock still `EPERM`s in containers (best-effort). |
 | Developer SDK and CLI | CLI demo only. **No SDK** |
 
 **Remaining Milestone A work, in dependency order**
 
 *(Revised 2026-09-20 after the code/security audit — `temp/audit-2026-09-20.md`.)*
 
-1. **Write the sandbox escape test** — fork a child, engage the sandbox, assert network/arbitrary-reads/exec are refused. It fails today; its absence is why `C1`/`C2` shipped.
-2. **Decide which layer enforces agent confinement and implement it there** (`C4`) — seccomp, the WASI host, and `bivdi-net` currently each defer to another; name the enforcing layer in `docs/ai-agents.md`.
-3. **Add the arch check + `TSYNC`** to the seccomp filter (`C2`, `H2`), and cut the allowlist to what the host needs (drop network/`execve`/`clone` from the agent profile).
-4. **Fix `NetService::resolve`** (`C3`) — resolution must require a namespace capability and attenuate from what the caller holds; reverse the test that certifies the bug.
-5. **Make degraded hardening a policy decision** (`H1`) — `engage()` needs a strict mode that refuses to run untrusted code when `is_hardened()` is false.
-6. **Give the provenance log hash-chaining and durability** (`H4`).
+1. **Write the sandbox escape test** — **done**: `sandbox_refuses_network_arbitrary_reads_and_exec` forks, engages, and asserts `socket`/`execve` are refused.
+2. **Decide which layer enforces agent confinement and implement it there** (`C4`) — the seccomp profile now denies network/exec/clone at the syscall layer; the WASI host still does not mediate egress against flow capabilities (this remains the chosen-layer work, named in `docs/ai-agents.md`).
+3. **Add the arch check + `TSYNC`** — **done** (`C2`, `H2`); allowlist cut (`C1`).
+4. **Fix `NetService::resolve`** — **done** (`C3`): resolution now requires a namespace capability and attenuates from it; `grant_flow` binds the endpoint to the capability's resource (`M6`).
+5. **Make degraded hardening a policy decision** — **done** (`H1`): `engage_strict()` returns `Err` unless fully hardened.
+6. **Give the provenance log hash-chaining** — **done** (`H4`, append-only + chaining + `verify_chain`); durability and signed epochs remain future.
 7. **Give `Agent` a capability set** (`H3`) and rewrite the §3.4 scenario as one agent holding two capabilities, with clauses 1 and 4 asserted not commented (`M4`).
 8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee).
 9. **Clear the overclaiming language in one pass** (`P3`/`P4`, `M2`/`M3`/`M7`/`M8`).

@@ -49,8 +49,6 @@ pub struct NetService {
     next_resource: u64,
     /// Registered service names → their capability resource.
     registry: std::collections::BTreeMap<ServiceName, Resource>,
-    /// The owner grant capability per registered resource.
-    roots: std::collections::BTreeMap<Resource, Capability>,
 }
 
 impl NetService {
@@ -63,23 +61,29 @@ impl NetService {
     pub fn register_service(&mut self, name: ServiceName) -> Capability {
         let resource = self.alloc_resource();
         self.registry.insert(name, resource);
-        let root = self.runtime.mint(resource, Rights::ALL);
-        self.roots.insert(resource, root);
-        root
+        self.runtime.mint(resource, Rights::ALL)
     }
 
     /// Resolve an identity name to a flow capability — **DNS as a capability
     /// decision**. Returns a flow the caller may use, or `None` if the name is
     /// unknown (which is structurally indistinguishable from "no authority").
-    pub fn resolve(&mut self, name: &ServiceName) -> Option<Flow> {
+    ///
+    /// Resolution requires a **namespace capability**: a capability the caller
+    /// already holds over the resolution namespace. The returned flow is
+    /// attenuated from *that* capability, never from the service's own root.
+    /// A caller holding nothing cannot obtain network authority from a name
+    /// (2026-09-20 audit, C3).
+    pub fn resolve(&mut self, namespace: &Capability, name: &ServiceName) -> Option<Flow> {
         let resource = *self.registry.get(name)?;
-        // Resolution yields a read flow bound to the registered resource. The
-        // flow is attenuated from the service's own grant capability, so the
-        // resolved name is authority, never a bare string.
-        let capability = self
-            .runtime
-            .attenuate(&self.root_for(resource)?, Rights::READ)
-            .ok()?;
+        // The namespace capability must actually grant READ over the namespace
+        // resource; otherwise resolution is refused.
+        if !self.runtime.check(namespace, resource, Rights::READ) {
+            return None;
+        }
+        // The flow is attenuated from what the caller holds, not minted from
+        // the service's root. The endpoint is bound to the resource the
+        // namespace capability names (M6).
+        let capability = self.runtime.attenuate(namespace, Rights::READ).ok()?;
         Some(Flow {
             capability,
             endpoint: name.clone(),
@@ -90,12 +94,22 @@ impl NetService {
     /// Issue a flow capability for a registered service, attenuated to a
     /// specific trust-anchor set. The holder can connect *only* to this
     /// endpoint, with *only* these anchors.
+    ///
+    /// The flow is attenuated from `service` (a capability the caller holds)
+    /// and its endpoint is bound to the resource that capability names — never
+    /// a name supplied independently of the authority (2026-09-20 audit, M6).
     pub fn grant_flow(
         &mut self,
         service: &Capability,
         name: ServiceName,
         anchors: TrustAnchors,
     ) -> Option<Flow> {
+        // The endpoint must name the same resource the capability grants, so a
+        // caller cannot pair service A's capability with service B's name.
+        let resource = *self.registry.get(&name)?;
+        if service.resource() != resource {
+            return None;
+        }
         let flow_cap = self.runtime.attenuate(service, Rights::READ).ok()?;
         Some(Flow {
             capability: flow_cap,
@@ -107,15 +121,6 @@ impl NetService {
     /// Check whether a flow is currently usable (held, unexpired, grants Read).
     pub fn usable(&self, flow: &Flow, resource: Resource) -> bool {
         self.runtime.check(&flow.capability, resource, Rights::READ)
-    }
-
-    /// The capability this service holds over `resource`'s grant (the root
-    /// capability minted at registration), used to attenuate resolved flows.
-    fn root_for(&self, resource: Resource) -> Option<Capability> {
-        // Find the grant capability for the resource by re-minting is not
-        // possible (minting is owner-only); instead we track the root grant
-        // capability per registered resource.
-        self.roots.get(&resource).copied()
     }
 
     fn alloc_resource(&mut self) -> Resource {
@@ -148,22 +153,55 @@ mod tests {
     #[test]
     fn unresolved_name_is_structurally_no_authority() {
         let mut net = NetService::new();
-        // An unknown name resolves to nothing — there is no ambient network
-        // namespace in which to bind.
+        // A caller holding nothing cannot resolve, even for a registered name.
+        let owner = net.register_service(ServiceName::new("service://photos"));
+        // No namespace capability held → no authority.
         assert!(net
-            .resolve(&ServiceName::new("service://nonexistent"))
+            .resolve(&owner, &ServiceName::new("service://nonexistent"))
             .is_none());
     }
 
     #[test]
     fn resolved_name_yields_a_flow_capability() {
         let mut net = NetService::new();
-        let _svc = net.register_service(ServiceName::new("service://photos"));
-        // A registered name resolves to a usable flow — DNS is a capability
-        // decision, not a bare lookup.
+        let svc = net.register_service(ServiceName::new("service://photos"));
+        // A registered name resolves to a usable flow only when the caller
+        // holds a namespace capability that grants READ over that resource.
         let flow = net
-            .resolve(&ServiceName::new("service://photos"))
-            .expect("registered name resolves");
+            .resolve(&svc, &ServiceName::new("service://photos"))
+            .expect("registered name resolves with a namespace capability");
         assert_eq!(flow.endpoint, ServiceName::new("service://photos"));
+    }
+
+    #[test]
+    fn resolve_without_authority_is_refused() {
+        // The bug fixed in C3: knowing a name must not confer network authority.
+        // A caller that does not hold the namespace capability over the service
+        // cannot resolve it, even though the name is registered.
+        let mut net = NetService::new();
+        net.register_service(ServiceName::new("service://photos"));
+
+        // A capability over a *different* resource does not authorise resolution.
+        let other = net.register_service(ServiceName::new("service://mail"));
+        assert!(net
+            .resolve(&other, &ServiceName::new("service://photos"))
+            .is_none());
+    }
+
+    #[test]
+    fn grant_flow_binds_endpoint_to_capability_resource() {
+        // M6: a flow's endpoint must name the resource its capability grants.
+        let mut net = NetService::new();
+        let svc = net.register_service(ServiceName::new("service://photos"));
+        net.register_service(ServiceName::new("service://mail"));
+
+        // Passing service A's capability with service B's name is refused.
+        assert!(net
+            .grant_flow(
+                &svc,
+                ServiceName::new("service://mail"),
+                TrustAnchors(vec![])
+            )
+            .is_none());
     }
 }
