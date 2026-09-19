@@ -1,17 +1,15 @@
 [package]
-name = "bivdi-cli"
+name = "bivdi-runtime"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
-description = "Bivdi Runtime CLI demo"
+description = "Bivdi runtime node: composes the six primitives into one running system"
 
 [dependencies]
 bivdi-object = { path = "../bivdi-object" }
 bivdi-cap = { path = "../bivdi-cap" }
 bivdi-state = { path = "../bivdi-state" }
-bivdi-agent = { path = "../bivdi-agent" }
 bivdi-event = { path = "../bivdi-event" }
 bivdi-identity = { path = "../bivdi-identity" }
-bivdi-runtime = { path = "../bivdi-runtime" }
-serde_json.workspace = true
+bivdi-agent = { path = "../bivdi-agent" }

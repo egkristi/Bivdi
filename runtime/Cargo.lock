@@ -33,6 +33,7 @@ dependencies = [
  "bivdi-event",
  "bivdi-identity",
  "bivdi-object",
+ "bivdi-runtime",
  "bivdi-state",
  "serde_json",
 ]
@@ -60,6 +61,18 @@ dependencies = [
  "blake3",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "bivdi-runtime"
+version = "0.1.0"
+dependencies = [
+ "bivdi-agent",
+ "bivdi-cap",
+ "bivdi-event",
+ "bivdi-identity",
+ "bivdi-object",
+ "bivdi-state",
 ]
 
 [[package]]
