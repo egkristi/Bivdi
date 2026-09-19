@@ -32,7 +32,7 @@
   - **capability runtime** — mint, attenuate, lease, revoke, provenance
   - **state engine** — desired state, reconciliation, generations
 - A minimal developer SDK and CLI demonstrating the API end-to-end.
-- `rfcs/` seeded with the decisions already made (`D-001` … `D-012`) and the first RFCs for the open questions.
+- `rfcs/` seeded with the decisions already made (`D-001` … `D-013`) and the first RFCs for the open questions.
 
 **Exit gate.** A developer can, on a Linux machine: write a program against the Bivdi API, hand it an attenuated capability, run it, and query provenance for everything it wrote — with no code running outside a sandbox.
 

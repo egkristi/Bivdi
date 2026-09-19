@@ -4,7 +4,7 @@ This directory holds the canonical technical documentation. Everything here is g
 
 ## What is certain vs. not
 
-- **Certain (decided):** the name and attribution, the security model (no ambient authority, capability-based, IOMMU required, crypto-shredding), the data/state/event model, WASI + Rust + language-neutral IDL, the two-track strategy, the VM-first driver target, no machine-state persistence, performance-as-a-first-class-attribute, and open-core licensing.
+- **Certain (decided):** the name and attribution, the security model (no ambient authority, capability-based, IOMMU required, crypto-shredding), the data/state/event model, WASI + Rust + language-neutral IDL, the two-track strategy, the VM-first driver target, no machine-state persistence, performance-as-a-first-class-attribute, open-core licensing, and container-friendly-not-primitive.
 - **Proposed (not yet final):** kernel choice (seL4 proposed), target niche, component naming, governance/RFC process.
 
 **Component naming is deferred.** Use generic, descriptive terms ("object store", "capability runtime", "state engine", …). No codenames until a naming decision is recorded.
