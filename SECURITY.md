@@ -1,6 +1,6 @@
 # Security Policy
 
-**Status:** Concept/planning, with the first code (the Bivdi Runtime under `runtime/`, Phase 0 + Phase 1 agent host) implemented. There is no shipped operating system yet, so there is no production software with vulnerabilities to report. This policy states the security commitments and how to report issues against the design and the runtime.
+**Status:** Concept/planning for the kernel, with a complete **Bivdi Runtime** under `runtime/` (all six primitives + WASI runtime) implemented and tested. There is no shipped operating system yet, so there is no production software with vulnerabilities to report. This policy states the security commitments and how to report issues against the design and the runtime.
 
 ## What is in scope
 
