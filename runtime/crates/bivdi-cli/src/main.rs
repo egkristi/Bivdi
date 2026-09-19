@@ -317,6 +317,11 @@ fn run_agent_scenario() {
         "  event-fabric history = {} events",
         node.events.history().len()
     );
+    let provenance = node.provenance_query();
+    println!(
+        "  authority provenance = {} events (granted/used/revoked)",
+        provenance.len()
+    );
     println!();
 }
 

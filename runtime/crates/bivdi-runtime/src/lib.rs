@@ -123,6 +123,25 @@ impl Node {
     pub fn reconcile(&self) -> Vec<bivdi_state::Action> {
         self.state.reconcile()
     }
+
+    /// Queryable provenance: return the authority-relevant events (granted,
+    /// used, revoked) in append order. This is the operator-facing half of the
+    /// value proposition — "what happened, and what gave it the right?" is a
+    /// query, not a log dive. It records *authority*, never content.
+    pub fn provenance_query(&self) -> Vec<Event> {
+        self.events
+            .history()
+            .into_iter()
+            .filter(|e| {
+                matches!(
+                    e,
+                    Event::CapabilityGranted { .. }
+                        | Event::CapabilityUsed { .. }
+                        | Event::CapabilityRevoked { .. }
+                )
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -185,5 +204,42 @@ mod tests {
         let before = node.events.history().len();
         let _ = node.agent_act(agent_id, res, Right::Read);
         assert!(node.events.history().len() > before);
+    }
+
+    #[test]
+    fn provenance_query_returns_authority_events_only() {
+        let mut node = Node::new(initial());
+        let res = Resource(1);
+        let root = node.mint_root(res, Right::Grant); // granted
+        let agent_id = node
+            .spawn_agent(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap(); // granted
+        let _ = node.agent_act(agent_id, res, Right::Read); // used
+        let _ = node.agent_act(agent_id, res, Right::Write); // denied -> revoked event
+
+        let provenance = node.provenance_query();
+        // Only authority events are returned; no object/workload events.
+        assert!(provenance.iter().all(|e| {
+            matches!(
+                e,
+                Event::CapabilityGranted { .. }
+                    | Event::CapabilityUsed { .. }
+                    | Event::CapabilityRevoked { .. }
+            )
+        }));
+        assert!(provenance
+            .iter()
+            .any(|e| matches!(e, Event::CapabilityGranted { .. })));
+        assert!(provenance
+            .iter()
+            .any(|e| matches!(e, Event::CapabilityUsed { .. })));
+        assert!(provenance
+            .iter()
+            .any(|e| matches!(e, Event::CapabilityRevoked { .. })));
     }
 }
