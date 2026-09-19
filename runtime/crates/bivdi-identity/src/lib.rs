@@ -12,7 +12,6 @@
 //! opaque fingerprint used to stand in for a cryptographic identity. Real
 //! signing/key handling belongs to Bivdi Core.
 
-use bivdi_cap::{CapRuntime, Capability, Resource, Right};
 use std::collections::BTreeMap;
 
 /// The identity kind.
@@ -134,21 +133,6 @@ impl IdentityService {
             None => false,
         })
     }
-}
-
-/// A helper for issuing a capability bound to an identity. In Phase 0 this is
-/// a thin wrapper over the capability runtime; in Core the identity is a
-/// property of the channel (an unforgeable badge), not a payload claim.
-///
-/// The identity is currently advisory (Phase 0 has no real key ceremony);
-/// authority still flows only through the capability, never the claimed name.
-pub fn grant_identity_capability(
-    runtime: &mut CapRuntime,
-    _identity: &Identity,
-    resource: Resource,
-    right: Right,
-) -> Capability {
-    runtime.mint(resource, right)
 }
 
 #[cfg(test)]

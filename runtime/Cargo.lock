@@ -20,6 +20,9 @@ dependencies = [
 [[package]]
 name = "bivdi-cap"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bivdi-cli"
@@ -46,7 +49,6 @@ dependencies = [
 name = "bivdi-identity"
 version = "0.1.0"
 dependencies = [
- "bivdi-cap",
  "serde",
  "serde_json",
 ]

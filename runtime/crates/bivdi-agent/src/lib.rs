@@ -36,11 +36,15 @@ impl Quota {
 }
 
 /// A proposed step in an agent's plan. This is *data*, not instructions: it is
-/// enforced by the host and can never grant new authority on its own.
+/// enforced by the host and can never grant new authority on its own. The
+/// `right` is the authority the step *requests* to exercise; the host checks it
+/// against the agent's held capability.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Step {
-    pub action: String,
+    /// The resource the step acts on.
     pub resource: u64,
+    /// The right the step requires (Read, Write, or Grant).
+    pub right: Right,
 }
 
 /// A reviewable plan, produced by the AI and enforced by the host.
@@ -221,9 +225,11 @@ impl AgentHost {
     /// Execute a full plan on behalf of an agent. Each step is enforced in
     /// turn; the first failure aborts the plan. This is "AI proposes, the OS
     /// enforces" — the plan is data, and the host is the enforcement point.
+    /// The right each step requires is taken from the step itself and checked
+    /// against the agent's held capability (never hard-coded).
     pub fn execute_plan(&mut self, agent: &mut Agent, plan: &Plan) -> Result<(), AgentError> {
         for step in &plan.steps {
-            self.execute(agent, Resource(step.resource), Right::Read)?;
+            self.execute(agent, Resource(step.resource), step.right)?;
         }
         Ok(())
     }
@@ -429,20 +435,47 @@ mod tests {
                 Quota::new(10, 0),
             )
             .unwrap();
-        // A plan with two steps executes fully within quota.
+        // A plan with two read steps executes fully within quota.
         let plan = Plan {
             steps: vec![
                 Step {
-                    action: "read".into(),
                     resource: res.0,
+                    right: Right::Read,
                 },
                 Step {
-                    action: "read".into(),
                     resource: res.0,
+                    right: Right::Read,
                 },
             ],
         };
         assert!(h.execute_plan(&mut agent, &plan).is_ok());
         assert_eq!(agent.actions_used, 2);
+    }
+
+    #[test]
+    fn plan_respects_per_step_right() {
+        let res = Resource(10);
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        // Agent holds only Read.
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap();
+        // A plan whose step requires Write must be denied, even though the
+        // agent is otherwise within quota and lease.
+        let plan = Plan {
+            steps: vec![Step {
+                resource: res.0,
+                right: Right::Write,
+            }],
+        };
+        assert!(matches!(
+            h.execute_plan(&mut agent, &plan),
+            Err(AgentError::NotAuthorized)
+        ));
     }
 }
