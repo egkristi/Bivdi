@@ -10,23 +10,11 @@
 // (`P-001`, deferred) is an implementation of this contract, not a vocabulary
 // it borrows.
 //
-// NOTE: this file documents the contract and is kept in sync with the Rust
-// implementation by hand. Generated bindings (`wit-bindgen`) are a later
-// milestone; the types here are the source of truth the Rust conforms to.
+// NOTE: this file is the source of truth for the contract. It must stay
+// valid WIT (parseable by `wit-bindgen`/`wasm-tools`); CI validates it. The
+// Rust crates conform to it by hand until generated bindings are wired in.
 
 package bivdi:core@0.1.0;
-
-/// The six rights from `ARCHITECTURE.md` §4.2, as a flag set. Rights are
-/// **independent** — `execute` is not "less than" `write`. Attenuation is
-/// subset inclusion (RFC 0002 §5).
-flags rights {
-    read,
-    write,
-    execute,
-    grant,
-    signal,
-    revoke,
-}
 
 /// A content-addressed object in the store. The handle is opaque; there is no
 /// root, no path, and no upward walk (objects-over-paths invariant).
@@ -61,22 +49,32 @@ interface objects {
 
     variant cas-error {
         /// The actual value observed when a CAS misses.
-        stale(actual: option<list<u8>>),
+        stale(option<list<u8>>),
     }
 }
 
 /// Capabilities: unforgeable, attenuable (subset inclusion), revocable
 /// (subtree), leased, and provenance-logged.
 interface capabilities {
-    /// A resource a capability points at.
-    resource resource;
+    /// The six rights from `ARCHITECTURE.md` §4.2, as a flag set. Rights are
+    /// **independent** — `execute` is not "less than" `write`. Attenuation is
+    /// subset inclusion (RFC 0002 §5).
+    flags rights {
+        read,
+        write,
+        execute,
+        grant,
+        signal,
+        revoke,
+    }
 
-    /// A capability grants a set of `rights` over a `resource`.
+    /// A resource a capability points at. In the Runtime this is an opaque
+    /// `u64` id; resources are named by number, never by path.
+
+    /// A capability grants a set of `rights` over a resource.
     resource cap {
         /// The rights this capability holds.
         rights: func() -> rights;
-        /// The resource this capability names.
-        resource: func() -> resource;
         /// Attenuate to a subset of the held rights. Widening is an error.
         attenuate: func(to: rights) -> result<cap, cap-error>;
     }
@@ -93,7 +91,7 @@ interface capabilities {
         /// The capability id this event concerns, where applicable.
         cap: option<u64>,
         /// The resource this event concerns, where applicable.
-        resource: option<u64>,
+        resource-id: option<u64>,
         /// The rights exercised or denied, where applicable.
         rights: option<rights>,
     }
@@ -101,13 +99,13 @@ interface capabilities {
     /// The capability runtime.
     resource runtime {
         /// Owner-only: mint a root capability.
-        mint: func(resource: u64, rights: rights) -> cap;
+        mint: func(resource-id: u64, rights: rights) -> cap;
         /// Record a use; returns `false` (and records a denial) if not granted.
-        record-use: func(cap: cap, resource: u64, rights: rights) -> bool;
+        record-use: func(cap: cap, resource-id: u64, rights: rights) -> bool;
         /// Revoke a capability and its entire derived subtree.
         revoke: func(cap: cap);
         /// Query provenance for a resource.
-        provenance-for-resource: func(resource: u64) -> list<event>;
+        provenance-for-resource: func(resource-id: u64) -> list<event>;
         /// Query provenance for a capability's authority chain.
         provenance-for-capability: func(cap: u64) -> list<event>;
     }
@@ -122,8 +120,8 @@ interface state {
     }
 
     variant action {
-        start(workload: string, count: u64),
-        stop(workload: string, count: u64),
+        start(tuple<string, u64>),
+        stop(tuple<string, u64>),
     }
 
     resource engine {
@@ -149,15 +147,15 @@ interface events {
 
     /// First-class event kinds (representative, not exhaustive).
     variant event {
-        object-created(object: string),
-        object-changed(object: string),
-        object-deleted(object: string),
-        capability-granted(cap: u64),
-        capability-used(cap: u64),
-        capability-denied(cap: u64),
-        capability-revoked(cap: u64),
-        generation-activated(generation: u64),
-        rollback-started(to: u64),
+        object-created(string),
+        object-changed(string),
+        object-deleted(string),
+        capability-granted(u64),
+        capability-used(u64),
+        capability-denied(u64),
+        capability-revoked(u64),
+        generation-activated(u64),
+        rollback-started(u64),
     }
 
     resource bus {
@@ -196,8 +194,7 @@ interface identity {
 
 /// The agent host: capability-constrained, time-limited, quota-bound agents.
 interface agents {
-    use capabilities.{rights};
-    use state.{action};
+    use capabilities.{cap, rights};
 
     record quota {
         max-actions: u64,
@@ -207,7 +204,7 @@ interface agents {
     /// A proposed step in an agent's plan. This is *data*, not instructions:
     /// the host enforces it against the agent's held capability.
     record step {
-        resource: u64,
+        resource-id: u64,
         right: rights,
     }
 
@@ -224,12 +221,12 @@ interface agents {
 
     resource host {
         /// Owner-only: mint a root capability.
-        mint-root: func(resource: u64, rights: rights) -> capabilities.cap;
+        mint-root: func(resource-id: u64, rights: rights) -> cap;
         /// Spawn an agent attenuated from a source capability.
-        spawn: func(source: capabilities.cap, rights: rights, ttl-ms: u64,
+        spawn: func(source: cap, rights: rights, ttl-ms: u64,
             quota: quota) -> result<u64, agent-error>;
         /// Execute one action on behalf of an agent.
-        execute: func(agent: u64, resource: u64, rights: rights)
+        execute: func(agent: u64, resource-id: u64, rights: rights)
             -> result<_, agent-error>;
         /// Execute a full plan (first failure aborts).
         execute-plan: func(agent: u64, plan: plan) -> result<_, agent-error>;
@@ -238,6 +235,8 @@ interface agents {
 
 /// Networking: identity-based endpoints and flow capabilities. No raw sockets.
 interface networking {
+    use capabilities.{cap};
+
     record service-name {
         value: string,
     }
@@ -255,7 +254,7 @@ interface networking {
 
     resource service {
         /// Owner-only: register a service and receive its grant capability.
-        register: func(name: service-name) -> capabilities.cap;
+        register: func(name: service-name) -> cap;
         /// Resolve an identity name to a flow — DNS as a capability decision.
         resolve: func(name: service-name) -> option<flow>;
         /// Issue a flow for a registered service.

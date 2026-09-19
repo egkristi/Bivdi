@@ -44,7 +44,7 @@ The gate has four clauses, mapped from the original Phase 0.
 
 | Clause | Status | What is missing |
 |---|---|---|
-| *Write a program against the Bivdi API* | **Partly met** | A WIT IDL contract exists (`wit/core.wit`), but no generated bindings or SDK. Callers link Rust crates directly — a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
+| *Write a program against the Bivdi API* | **Partly met** | A WIT IDL contract exists (`wit/core.wit`) and is now **valid, parseable WIT, enforced by a test** (`wit_contract_is_valid`). But there are no generated bindings or SDK — callers link Rust crates directly, a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
 | *Hand it an attenuated capability* | **Met, in-process** | `bivdi-cap` mints, attenuates, leases and revokes, with subtree revocation. It does not survive a process boundary, and unforgeability is simulated with opaque ids. |
 | *Query provenance for everything it wrote* | **Met, in-process** | `bivdi-cap` exposes `provenance_for_resource`/`provenance_for_capability`; the node exposes `provenance_query`; denials are recorded explicitly (`Denied` events). |
 | *With no code running outside a sandbox* | **Met, best-effort** | A `bivdi-sandbox` crate applies a seccomp syscall allowlist and a read-only Landlock policy. It is best-effort: on a host that forbids the syscalls (old kernel, restrictive container profile), it reports *why* rather than overclaiming (RFC 0003). |
@@ -53,7 +53,7 @@ The gate has four clauses, mapped from the original Phase 0.
 
 | Deliverable | Status |
 |---|---|
-| WIT IDL | **Present** — `wit/core.wit` covers all six primitives; conforms to RFC 0002 §3.5 (no seL4 concept). |
+| WIT IDL | **Present + valid** — `wit/core.wit` covers all six primitives; conforms to RFC 0002 §3.5 (no seL4 concept); validated by `wit_contract_is_valid` in the conformance suite. |
 | Conformance suite | **Done** — `tests/conformance` encodes the one-contract vectors (RFC 0002 §8.5). |
 | Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
 | Object store (durable) | **Done, deterministic CBOR** — blobs, CAS cells, catalogs, plus `save_cbor`/`load_cbor` (RFC 0002 §3.2); JSON `save`/`load` kept for compat |
@@ -68,7 +68,7 @@ The gate has four clauses, mapped from the original Phase 0.
 
 **Remaining Milestone A work, in dependency order**
 
-1. Generate bindings from `wit/core.wit` (`wit-bindgen`) and make the Rust crates implement the generated traits — the conformance suite is in place; generated bindings are the last piece of the "one contract" guarantee.
+1. Generate bindings from `wit/core.wit` (`wit-bindgen`) and make the Rust crates implement the generated traits — the conformance suite and the WIT-validation test are in place; generated bindings are the last piece of the "one contract" guarantee.
 2. ~~Persist the object store with a durable encoding~~ — **done** (deterministic CBOR, `save_cbor`/`load_cbor`).
 3. ~~Harden the runtime with seccomp and Landlock~~ — **done** (best-effort); remaining is verifying the sandbox on a host that permits Landlock, and hardening the container's own seccomp profile to *allow* Landlock rather than `EPERM` it.
 
