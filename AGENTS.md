@@ -48,7 +48,7 @@ Consult `README.md` §16. As of writing:
 - **Linux driver reuse is driver-VM-only.** Linux kernel driver code is GPLv2-only and must **never** be copied into Bivdi's own (MPL-2.0) components. Reuse of Linux drivers happens only inside an isolated driver VM. Do not introduce dependencies or code whose license conflicts with this.
 - **AI-generated code policy.** All committed code is human-reviewed/edited before landing; provenance of authorship is documented; purely machine-generated code is not placed in the proprietary commercial layer.
 - **Provisional decisions in the runtime are marked, not silent.** In `runtime/`: content addressing uses BLAKE3-256 (proposed, not decided), and unforgeability is simulated with in-process opaque ids (a Phase 0 stand-in for kernel enforcement). Keep these marked as provisional; do not promote them to decided without an RFC.
-- **Attribution:** the Sámi name carries commitments (README §2). Never present the name as invented or as generic "Nordic" branding; preserve attribution text in docs.
+- **Attribution:** the Sámi name carries its meaning (README §2). Preserve the name's stated meaning in docs; do not present it as invented or as generic "Nordic" branding.
 
 ## Repository layout
 

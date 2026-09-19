@@ -55,7 +55,7 @@ A decision that resolves a `P-*` or open question in `README.md` §16–17 must 
 ## 7. Security and attribution
 
 - Every new capability, syscall, or manifest field must be traceable to the threat model (`docs/threat-model.md`). Changes that widen authority are security changes and require explicit rationale.
-- The Sámi name carries commitments (`README.md` §2). Never present it as invented or as generic "Nordic" branding; preserve attribution text.
+- The Sámi name carries its meaning (`README.md` §2). Do not present it as invented or as generic "Nordic" branding.
 
 ---
 

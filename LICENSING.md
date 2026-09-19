@@ -97,5 +97,4 @@ This means the commercial upside has three legs: (1) proprietary enterprise feat
 - [ ] Exact interface-exception wording.
 - [ ] DCO sign-off mechanics (e.g., `git` `Signed-off-by`).
 - [ ] Employment/IP-assignment terms for anyone writing the proprietary layer.
-- [ ] Trademark filing (Norwegian Patentstyret, EUIPO, USPTO, classes 9 and 42).
 - [ ] Choice of MPL-2.0 with or without the "secondary license" notice (MPL-2.0 §3.3).
