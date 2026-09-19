@@ -1,7 +1,7 @@
-//! Bivdi agent host — Phase 1 (on the Runtime, pre-kernel).
+//! Bivdi agent host — the Runtime's agent-execution core.
 //!
 //! Implements the decided agent model from `docs/ai-agents.md` on top of the
-//! Phase 0 capability runtime:
+//! capability runtime:
 //! - **attenuated delegation** (an agent only holds what it was handed),
 //! - **time-limited** (leases) and **quota-bound** (action/cost budget),
 //! - **no escalation** (an agent cannot delegate more than it holds),
@@ -10,10 +10,11 @@
 //! - **AI proposes, the OS enforces** (a reviewable plan is enforced by the
 //!   host, not by the agent).
 //!
-//! # Blocked on P-001
+//! # Scope
 //!
-//! The *kernel* half of Phase 1 (seL4 VM bring-up, virtio drivers, WASI
-//! runtime) is out of scope here — it depends on the undecided kernel choice.
+//! This crate is the agent-execution-host half of the product (`D-014`). The
+//! microkernel Core is a parked research track (`D-003`); the kernel choice
+//! (`P-001`) is deferred indefinitely and does not gate this crate.
 
 use bivdi_cap::{CapRuntime, Capability, Lease, Resource, Right};
 use serde::{Deserialize, Serialize};

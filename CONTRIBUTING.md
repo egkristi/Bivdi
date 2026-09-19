@@ -2,7 +2,7 @@
 
 **Status:** Applies from day one. These rules reflect the project's decided working practices; they are not architectural decisions.
 
-Bivdi is at the concept/planning stage for the kernel, but the **Bivdi Runtime** under `runtime/` is a complete, running implementation of the six-primitive model (object, capability, state, event, identity, agent) plus the WASI runtime. Contributions today are primarily documentation, specifications, RFCs, and the runtime. The process below applies throughout.
+Bivdi's product is the **Bivdi Runtime** under `runtime/` — a running implementation of the six-primitive model (object, capability, state, event, identity, agent) plus the WASI runtime. The microkernel **Bivdi Core** is a parked research track (`P-001` deferred). Contributions today are primarily documentation, specifications, RFCs, and the runtime. The process below applies throughout.
 
 ---
 

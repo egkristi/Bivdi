@@ -1,6 +1,6 @@
 # RFC 0003 — Platform guarantees matrix: reconciling D-002 with D-006
 
-**Status:** Proposed
+**Status:** Deferred
 **Issue:** #39
 **Resolves:** The unrecorded conflict between `D-002` (VM engines first) and `D-006` (IOMMU required)
 **Date:** 2026-09-19
@@ -10,6 +10,8 @@
 ## 1. Summary
 
 `D-002` and `D-006` cannot both hold on the stated first-target platforms. This RFC keeps both decisions intact and adds the missing piece: a **per-platform guarantees matrix** stating which decided security properties actually hold on each supported target, and a rule that no platform may be presented as supported until its row is written.
+
+**Deferral note (2026-09-19).** With the strategic pivot to "Bivdi Runtime is the product" and the microkernel (`P-001`) deferred indefinitely, the driver-isolation and IOMMU questions this RFC scopes are no longer on the critical path. The Runtime runs on Linux, where the host kernel — not Bivdi — owns DMA isolation. This RFC is therefore **deferred**, not rejected: it becomes relevant again only if and when Bivdi Core (the microkernel track) is reactivated. Its substance — never overclaim a guarantee a platform does not actually enforce — remains a standing principle and is applied to the Runtime's own claims in the meantime.
 
 ## 2. Motivation
 

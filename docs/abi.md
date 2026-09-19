@@ -1,12 +1,12 @@
 # Bivdi — ABI and interface requirements
 
-**Status:** Draft. This document states the **decided** requirements for the ABI and the interface-definition approach. The *specific IDL and its encoding are **open*** — this document defines *what the ABI must do*, not *which IDL*.
+**Status:** The IDL is **decided** (`D-015`): **WIT** with the Component Model canonical ABI in-process and deterministic CBOR across boundaries. See [`rfcs/0002-interface-definition-language.md`](../rfcs/0002-interface-definition-language.md). This document states the *requirements* the ABI must meet; the RFC resolves *which* IDL.
 
 ---
 
 ## 1. Purpose
 
-The ABI is the contract between components. It is the one thing both implementation tracks (`Bivdi Runtime` on Linux, `Bivdi Core` on a microkernel) share, so a program written against it runs on either unchanged (`D-003`).
+The ABI is the contract between components. It is the one contract that lets the Runtime (today) and any future Core (later) be the same system, so a program written against it runs on either unchanged (`D-003`, `D-015`).
 
 ---
 
@@ -14,13 +14,13 @@ The ABI is the contract between components. It is the one thing both implementat
 
 ### 2.1 Language-neutral IDL
 
-Component interfaces are defined in a **language-neutral IDL** (`D-005`). Bindings are **generated** for Rust, C, C++, Go, Swift, and WASI components — not hand-written ABI calls.
+Component interfaces are defined in a **language-neutral IDL** (`D-005`, `D-015`). Bindings are **generated** for Rust, C, C++, Go, Swift, and WASI components — not hand-written ABI calls.
 
 ### 2.2 The wire format is the contract
 
 The delivery/encoding format is the contract, **not** a language calling convention. This has two consequences:
 
-- The interface is stable across language updates and across the two tracks.
+- The interface is stable across language updates and across the Runtime and any future Core.
 - Rust's lack of a stable ABI is irrelevant: Rust is a language for *implementing* components, never a binding target that others must call into.
 
 ### 2.3 Capability-aware

@@ -1,6 +1,6 @@
 # RFC 0002 — Interface definition language and wire format
 
-**Status:** Proposed
+**Status:** Accepted
 **Issue:** #39
 **Resolves:** "IDL choice and wire format" (`README.md` §17, `docs/abi.md` §5, `docs/spec.md` §14.1)
 **Date:** 2026-09-19
@@ -15,7 +15,7 @@ Adopt **WIT** (the WebAssembly Component Model's interface definition language) 
 
 The IDL is named as a Phase 0 deliverable, and `docs/abi.md` states outright that it is blocked on this choice. It is the largest piece of unblocked work in the project: none of it depends on `P-001`.
 
-It is also the decision with the longest half-life. `D-003` makes one interface contract the thing that lets Bivdi Runtime and Bivdi Core be the same system, and `D-005` makes the wire format — not a language calling convention — the contract. Every service written before the IDL exists is written against an implicit interface that will have to be restated later; six crates have already been written that way.
+It is also the decision with the longest half-life. `D-003` makes one interface contract the thing that lets the Runtime today and any future Core later be the same system, and `D-005` makes the wire format — not a language calling convention — the contract. Every service written before the IDL exists is written against an implicit interface that will have to be restated later; six crates have already been written that way.
 
 ## 3. Proposal
 
@@ -61,7 +61,13 @@ Bindings are generated for Rust first (`wit-bindgen`), then C, then whatever the
 
 Schema evolution for *persistent objects* is a separate and harder question (`README.md` §17 item 2) and is **not** resolved here. This RFC resolves interface evolution only.
 
-### 3.5 What this does to the existing runtime
+### 3.5 Kernel independence of the IDL
+
+The IDL must not acquire any concept that binds it to a particular kernel. **No seL4 concept enters the IDL.** Capabilities, objects, events, and state are expressed in WIT terms (resources, records, variants, streams) — never as seL4 cnode/capability-object terminology, badge bits, or invocation numbers. The microkernel decision (`P-001`) is deferred, and the IDL is the load-bearing contract that keeps the door open: whatever kernel is eventually chosen, the interfaces Bivdi's own components speak must be restatable unchanged.
+
+This rule is what makes the Runtime (today) and any future Core (later) the *same system*: the contract is the WIT interface, and the kernel is an implementation of the contract, not a vocabulary the contract borrows.
+
+### 3.6 What this does to the existing runtime
 
 The six crates currently expose Rust APIs with no interface definition behind them. The migration is to write the WIT first and make the Rust conform, not to retrofit generated code:
 
@@ -126,7 +132,7 @@ One target needs re-examination once this lands: **component instantiation under
 2. **Fix the rights lattice first** (§5) — `flags` rather than an ordered enum — because the interface cannot be written truthfully otherwise. This is a breaking change to `bivdi-cap` and should land before more code depends on the ordering.
 3. **Generate Rust bindings** and make each crate implement its generated trait, keeping the current hand-written API as a thin façade until callers migrate.
 4. **Add the deterministic CBOR profile** and use it for the provenance log and blob encoding.
-5. **Write a conformance suite** from the WIT: the same test vectors must pass against Bivdi Runtime today and Bivdi Core later. This suite *is* the "one contract, two tracks" guarantee in `D-003` — without it, that guarantee is an intention.
+5. **Write a conformance suite** from the WIT: the same test vectors must pass against Bivdi Runtime today and any Bivdi Core later. This suite *is* the "one contract" guarantee in `D-003` — without it, that guarantee is an intention.
 
 Steps 1 and 2 are the Phase 0 exit-gate work. Steps 3 to 5 can proceed in parallel with any kernel decision.
 
@@ -135,13 +141,13 @@ Steps 1 and 2 are the Phase 0 exit-gate work. Steps 3 to 5 can proceed in parall
 On acceptance:
 
 - `README.md` §16 — add as `D-015`; §17 item 1 (IDL choice) struck.
-- `docs/decisions.md` — add `D-015` with a pointer to this RFC.
+- `docs/decisions.md` — add `D-015` with a pointer to this RFC; note the kernel-independence rule (§3.5) as the mechanism that keeps `P-001` open.
 - `docs/abi.md` — §5 open questions replaced by the decided IDL and encodings; the document is unblocked.
 - `docs/spec.md` §7 and §14 — IDL named; open-question list shortened.
 - `docs/object-store-format.md` — reference the deterministic CBOR profile for the on-disk encoding question.
 - `docs/threat-model.md` — add the component host's handle table as correctness-critical on the Runtime track.
 - `docs/performance.md` — qualify the component-instantiation target for AOT-compiled components.
-- `ROADMAP.md` — Phase 0 deliverable "ABI/IDL definition" becomes tractable; add the conformance suite as a Phase 0 exit condition.
+- `ROADMAP.md` — "ABI/IDL definition" becomes tractable; add the conformance suite as a milestone condition.
 
 ---
 

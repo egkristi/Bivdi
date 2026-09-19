@@ -1,6 +1,6 @@
 # RFC 0004 — Kernel choice: reuse seL4
 
-**Status:** Proposed
+**Status:** Deferred
 **Issue:** #44
 **Resolves:** `P-001` (kernel choice)
 **Date:** 2026-09-19
@@ -10,6 +10,8 @@
 ## 1. Summary
 
 Resolve `P-001` as **reuse of seL4** as Bivdi Core's kernel, used as a separate, unmodified upstream component rather than as code Bivdi owns or relicenses. This is evaluated against the headless-host niche (RFC 0001) and the platform-guarantees matrix (RFC 0003), and it is compatible with the open-core licensing decision (`D-012`), which already isolates third-party code behind published interfaces.
+
+**Deferral note (2026-09-19).** `P-001` is **deferred indefinitely**. The strategic pivot makes the Bivdi Runtime the product and parks Bivdi Core as a research track, so the kernel choice is removed from the critical path. This RFC is retained as the leading proposal (seL4) and the recorded analysis of the alternatives, so the decision can be taken quickly if and when the Core track is reactivated. It is **deferred, not rejected** — and until it is decided, RFC 0002 §3.5 (no seL4 concept enters the IDL) keeps the door open.
 
 ## 2. Motivation
 

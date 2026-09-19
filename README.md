@@ -1,24 +1,24 @@
 # Bivdi
 
-**A capability-secure, object-centric, declarative operating system — designed from first principles.**
+**The machine you run agents on — where what an agent touched is a queryable fact, and what it could touch was bounded before it started.**
 
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
 
 - **Project:** Bivdi
 - **Domain:** [bivdi.com](https://bivdi.com)
-- **Status:** Phase 0 and the Runtime half of Phase 1 are implemented and runnable (see [`runtime/`](runtime/)). The microkernel half of Phase 1 is blocked on `P-001`.
+- **Status:** Phase 0 and the Runtime half of Phase 1 are implemented and runnable (see [`runtime/`](runtime/)). The **Bivdi Runtime is the product**; the microkernel Core is a parked research track.
 - **Document:** Project overview and decisions
 
 ---
 
 ## 1. What Bivdi is
 
-Bivdi is a proposed operating-system architecture built around a single premise:
+Bivdi is an operating system for running AI agents, built around a single premise:
 
 > **The computer should be a secure, distributed, stateful environment for people and workloads — not a pile of processes wrapped around a filesystem.**
 
-It abandons several assumptions inherited from 1970s time-sharing systems:
+The product is the **agent execution host**: the machine you run agents on, where what an agent touched is a queryable fact and what it could touch was bounded before it started. It abandons several assumptions inherited from 1970s time-sharing systems:
 
 - **No ambient authority.** A program has no access to anything it was not explicitly handed. There is no `root`, no `sudo`, and no user ID that grants power by virtue of who launched a program.
 - **Objects over files.** Data lives in a typed, versioned, content-addressed object store. The filesystem survives as a compatibility view, not the conceptual center.
@@ -87,20 +87,22 @@ Everything important has an identity. Authority is explicit. State is declared a
 │  Drivers (one isolated domain each, IOMMU-confined)               │
 │  virtio-* · nvme · xhci · net · gpu · rtc · tpm …                │
 ├──────────────────────────────────────────────────────────────────┤
-│  Microkernel (proposed: seL4)                                    │
+│  Microkernel (deferred research track: seL4 proposed)             │
 │  scheduling · memory · IPC · capabilities · interrupts · VMM      │
 ├──────────────────────────────────────────────────────────────────┤
 │  Hardware (IOMMU required)                                       │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+> The diagram shows the full eventual shape. **Today the Runtime is the product** and runs the services layer directly on Linux (hardened with seccomp/Landlock), with the driver and microkernel layers deferred to the Core research track.
+
 > **Component naming is deferred.** This README uses generic, descriptive terms
 > (object store, capability runtime, state engine, event bus, identity service,
 > agent host, …). Final names are an open decision.
 
-### The kernel (open decision)
+### The kernel (deferred)
 
-The long-term kernel minimizes the trusted computing base and does only what requires the highest privilege:
+The Runtime runs on the Linux kernel today, hardened with seccomp/Landlock. The long-term vision of a microkernel — the **Bivdi Core** track — is parked research, not the product. When and if it is revisited, it would minimize the trusted computing base and do only what requires the highest privilege:
 
 - scheduling (threads, with time as a budgeted resource)
 - virtual address spaces / memory management
@@ -111,7 +113,7 @@ The long-term kernel minimizes the trusted computing base and does only what req
 
 Everything else — drivers, storage, networking, the window system — runs unprivileged in user space.
 
-**Status:** kernel choice is *open*. The leading proposal is **seL4**, a formally verified capability microkernel (functional-correctness proofs down to machine code on supported architectures, plus integrity/confidentiality results). Reusing seL4 saves several person-years of verification. An alternative is a small original microkernel written following the seL4 methodology.
+**Status:** kernel choice is *deferred indefinitely* (`P-001`). The leading proposal remains **seL4**, a formally verified capability microkernel (functional-correctness proofs down to machine code on supported architectures, plus integrity/confidentiality results). See [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md) for the recorded analysis. Until it is decided, the IDL forbids seL4 concepts (`D-015`), keeping the Core option open without letting the kernel's vocabulary leak into Bivdi's contracts.
 
 ---
 
@@ -243,32 +245,28 @@ Hardware support in tiers:
 
 ---
 
-## 14. Strategy: two parallel tracks
+## 14. Strategy: the Runtime is the product
 
-Bivdi develops along two tracks sharing one interface contract (IDL) and one API, so programs written against one run on the other without changes:
+The **Bivdi Runtime** (Linux, hardened with seccomp/Landlock) is the shipped product. It implements the object, capability, and state model now, reaches the agent-execution-host niche, and gives developers an SDK from day one.
 
-| Track | Substrate | Purpose |
-|---|---|---|
-| **Bivdi Runtime** | Linux (hardened with seccomp/Landlock) | Prove the object model, state engine, and APIs quickly; give developers an SDK from day one |
-| **Bivdi Core** | Microkernel (seL4 proposed), as a VM guest first, bare metal later | The product. The small verified trusted core is the value proposition and must be present from the start |
+The **Bivdi Core** (microkernel) is a parked research track, deferred indefinitely. One shared interface contract (the WIT IDL, `D-015`) is retained so that any future Core can run the same programs unchanged — but Core is not a parallel product track, and no current deliverable depends on it.
 
-> **The kernel is not the product.** The product is the object, capability, and state model. The kernel is the mechanism that enforces it. The model is built first; the kernel is an implementation of the model, not the place where the model is invented.
+> **The kernel is not the product.** The product is the object, capability, and state model — concretely, the agent execution host. The kernel is a possible future mechanism that enforces the model; it is not where the model is invented, and it is not on the critical path.
 
 ---
 
 ## 15. Roadmap
 
-Phases below synthesize the workgroup proposals. They are ordered by dependency and gated by outcomes, not by schedule — no timeline is estimated here. See `ROADMAP.md` for full deliverables, exit gates, and dependencies.
+Milestones below are ordered by dependency and gated by outcomes, not by schedule — no timeline is estimated here. See `ROADMAP.md` for full deliverables, exit gates, and dependencies. The Runtime is the product; the microkernel Core is parked research.
 
-| Phase | Content | Success criterion |
+| Milestone | Content | Success criterion |
 |---|---|---|
-| **0 — Foundation** | Spec v0.1, threat model, IDL, Bivdi Runtime on Linux (object store, capability runtime, state engine) | A developer writes a program, grants an attenuated capability, sees provenance for everything it writes |
-| **1 — Agent host in a VM** | Bivdi Core on microkernel with virtio drivers, WASI runtime, agent host, provenance; runs on KVM/Firecracker | An agent runs a real task with delegated, time-limited capabilities; prompt injection gains nothing beyond the delegation |
-| **2 — Cloud & pilots** | ENA/gVNIC/MANA + NVMe drivers, attestation, cluster, Linux compatibility layer | ≥1 external org runs production workloads in a public cloud |
-| **3 — Bare metal** | Reference servers, driver VMs, micro-VM compatibility, more native drivers | Bivdi runs on its own hardware with the same guarantees |
-| **4 — Desktop (optional)** | Reference laptop, graphical surface, Wayland proxy for legacy apps | Depends on funding |
+| **A — Agent host on Linux** | WIT IDL + conformance suite, rights lattice (flag set), durable object store, queryable provenance, seccomp + Landlock hardening | An agent runs a real task on the hardened Runtime; provenance for what it touched is queryable |
+| **B — WASI agent host** | wasmtime host, flow capabilities, the RFC 0001 §3.4 scenario as a recorded, repeatable run | A prompt-injection attempt yields no access beyond the delegation, verified by the recorded run |
+| **C — Ship the product** | container image, CLI, SDK, docs, provenance UX for operators | An external operator runs the agent host and queries provenance without reading the source |
+| **Core (parked)** | Microkernel bring-up (seL4 proposed), virtio drivers | Reactivated only if/when the research track is resumed; no current deliverable depends on it |
 
-**Feasibility note.** The verified kernel is the *easy* part (seL4 already exists). The hard part is everything around it — ecosystem, compatibility, drivers, adoption. Fuchsia is the cautionary control experiment.
+**Feasibility note.** The verified kernel was always the *easy* part (seL4 already exists); the hard part is everything around it — ecosystem, compatibility, drivers, adoption. The Runtime-first strategy does the hard part first and treats the kernel as optional.
 
 ---
 
@@ -280,7 +278,7 @@ Phases below synthesize the workgroup proposals. They are ordered by dependency 
 |---|---|
 | D-001 | Name is **Bivdi**; domain is **bivdi.com** |
 | D-002 | First-class driver target is the **most common VM engines** (KVM, VirtualBox, VMware, Firecracker, Proxmox, then AWS/GCP/Azure) |
-| D-003 | Two parallel tracks: **Bivdi Runtime** (Linux) and **Bivdi Core** (microkernel), sharing one IDL/API |
+| D-003 | **Bivdi Runtime is the product; Bivdi Core is a parked research track.** One IDL/API is retained so a future Core can run the same programs |
 | D-004 | **WASI components** as the native application format |
 | D-005 | **Rust** for services and drivers; language-neutral IDL for protocols |
 | D-006 | **IOMMU required**; hardware without IOMMU is unsupported |
@@ -291,14 +289,16 @@ Phases below synthesize the workgroup proposals. They are ordered by dependency 
 | D-011 | **Performance is a first-class attribute** — designed in, measured, and gated; never won by weakening the security model |
 | D-012 | **Open-core licensing**: freely implementable spec; permissive SDKs (MIT OR Apache-2.0); MPL-2.0 for Bivdi's own core/services/drivers; proprietary commercial/enterprise layer; DCO (no CLA); interface exception. See [`LICENSING.md`](LICENSING.md). |
 | D-013 | **Container-friendly, not container-primitive**: the runtime runs in a container from the first executable; containers are a deployment/compatibility concern, never an architectural or security primitive. |
+| D-014 | **First target niche is the agent execution host** — the machine you run agents on, where what an agent touched is a queryable fact and what it could touch was bounded before it started. See [`rfcs/0001-target-niche.md`](rfcs/0001-target-niche.md). |
+| D-015 | **WIT as the IDL**; Component Model canonical ABI in-process, deterministic CBOR across boundaries; generated bindings. **No seL4 concept enters the IDL.** See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
 
 ### Proposed (not yet final)
 
 | ID | Proposal |
 |---|---|
-| P-001 | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) |
-| P-002 | First target market / niche |
+| P-001 | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) — **deferred indefinitely**; Core is parked research |
 | P-003 | Component naming scheme |
+| ~~P-002~~ | ~~First target market / niche~~ → **resolved** as D-014. See [`rfcs/0001-target-niche.md`](rfcs/0001-target-niche.md). |
 | ~~P-004~~ | ~~License model~~ → **resolved** as D-012 (open core). See [`LICENSING.md`](LICENSING.md). |
 | P-005 | Governance structure and RFC process |
 
@@ -316,28 +316,30 @@ Recorded honestly — these are not solved in the design and are inputs to spec 
 6. **Agent policy.** Which actions always require human confirmation, and how is that expressed?
 7. **Semantic indexing.** Useful cross-data search without a broad-access indexer?
 8. **Powerbox usability.** Every capability system has foundered on the human interface; needs user testing.
-9. **Driver availability is the existential risk.** Hold the line on a narrow hardware list, or accept a Linux driver shim with its assurance cost?
+9. **Driver availability is the existential risk** — relevant to the Core research track, not the Runtime product. Hold the line on a narrow hardware list, or accept a Linux driver shim with its assurance cost?
 10. **GPU acceleration vs. isolation.** There may be no way to have both hardware-accelerated graphics and a small TCB.
 
 ---
 
-## 18. Repository structure (proposed)
+## 18. Repository structure
 
 ```
 bivdi/
 ├── docs/                 # specs, threat model, ABI, attribution
+├── runtime/              # Bivdi Runtime on Linux — the product
+├── rfcs/                 # all design decisions with rationale
+│
+│   # Deferred research track (Bivdi Core) — created when/if reactivated:
 ├── kernel/               # the trusted core (microkernel)
-├── runtime/              # Bivdi Runtime on Linux
-├── services/             # object store, capability runtime, state engine, event bus,
-│                         # identity, agent host, network, storage, provenance/audit,
-│                         # packaging, compositor (later)
 ├── drivers/              # one directory per driver, one isolated component each
 ├── lib/                  # capability-typed stdlib, syscall bindings, C ABI
 ├── compat/               # Linux ABI layer, micro-VM integration
+├── services/             # native service components (Core)
 ├── tools/                # build, package, audit, image tooling
-├── tests/                # property, fault-injection, conformance, fuzz
-└── rfcs/                 # all design decisions with rationale
+└── tests/                # property, fault-injection, conformance, fuzz
 ```
+
+The Runtime lives entirely under `runtime/`. The `kernel/`, `drivers/`, `lib/`, `compat/`, `services/`, and `tests/` directories belong to the deferred Core research track and are created only if that track is reactivated.
 
 ---
 

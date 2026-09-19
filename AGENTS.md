@@ -9,7 +9,7 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
 
-**Status:** Phase 0 and the Runtime half of Phase 1 (object/capability/state/event/identity/agent + WASI runtime) are implemented and merged. The microkernel half of Phase 1 (VM bring-up, virtio drivers) is blocked on the undecided kernel choice (`P-001`). Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
+**Status:** Phase 0 and the Runtime half of Phase 1 (object/capability/state/event/identity/agent + WASI runtime) are implemented and merged. The **Bivdi Runtime is the product**; the microkernel Core is a parked research track, and the kernel choice (`P-001`) is deferred indefinitely. Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
 
 ## Source documents
 
@@ -33,8 +33,8 @@ These are the load-bearing design commitments. Any code, doc, or proposal that c
 
 Consult `README.md` §16. As of writing:
 
-- **Decided:** name/domain; VM-engine-first driver target; two parallel tracks (Runtime on Linux + Core on microkernel); WASI as native app format; Rust + language-neutral IDL; IOMMU required; no persistence of running machine state; GPU/Wi-Fi in driver VMs; crypto-shredding for deletion; performance as a first-class attribute; open-core licensing.
-- **Proposed/open:** kernel choice (seL4 is the leading proposal); target niche; component naming; governance/RFC process.
+- **Decided:** name/domain; VM-engine-first driver target; **Bivdi Runtime is the product (Core parked)**; WASI as native app format; Rust + language-neutral IDL (WIT); **target niche = agent execution host**; IOMMU required; no persistence of running machine state; GPU/Wi-Fi in driver VMs; crypto-shredding for deletion; performance as a first-class attribute; open-core licensing.
+- **Proposed/open:** kernel choice (seL4 is the leading proposal — **deferred indefinitely**); component naming; governance/RFC process.
 
 **Component naming is deferred.** Use generic, descriptive terms in code and docs — "object store", "capability runtime", "state engine", "event bus", "identity service", "agent host" — not evocative codenames or daemon-style abbreviations, until a naming decision is recorded.
 
@@ -69,16 +69,16 @@ runtime/    Bivdi Runtime on Linux (Rust workspace — PRESENT)
   crates/bivdi-wasm     WASI runtime (D-004 native application format)
   crates/bivdi-net      networking model (identity endpoints, flow capabilities)
   crates/bivdi-cli      end-to-end demo CLI
-kernel/     the trusted core (microkernel) — not started; blocked on P-001
-services/   native service components — not started
-lib/        capability-typed stdlib, syscall bindings, C ABI — not started
-compat/     Linux ABI layer, micro-VM integration — not started
-drivers/    one directory per driver, one isolated component each — not started
-tools/      build, package, audit, image tooling — not started
-tests/      property, fault-injection, conformance, fuzz — not started
+kernel/     the trusted core (microkernel) — DEFERRED (parked research track); created if/when Core is reactivated
+services/   native service components — DEFERRED (Core research track)
+lib/        capability-typed stdlib, syscall bindings, C ABI — DEFERRED (Core research track)
+compat/     Linux ABI layer, micro-VM integration — DEFERRED (Core research track)
+drivers/    one directory per driver, one isolated component each — DEFERRED (Core research track)
+tools/      build, package, audit, image tooling — created as needed
+tests/      property, fault-injection, conformance, fuzz — created as needed
 ```
 
-The top-level `services/`, `drivers/`, and `lib/` directories in `README.md` §18 are the *planned* homes for Bivdi Core components. The Linux Runtime lives entirely under `runtime/`; do not create top-level `services/` etc. for Runtime code.
+The top-level `services/`, `drivers/`, and `lib/` directories in `README.md` §18 are the *planned* homes for Bivdi Core components (a deferred research track). The Linux Runtime lives entirely under `runtime/`; do not create top-level `services/` etc. for Runtime code.
 
 ## Process
 

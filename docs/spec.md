@@ -183,16 +183,14 @@ Performance is a first-class attribute with regression gates. Reference targets 
 
 ---
 
-## 12. Two tracks (decided)
+## 12. Runtime as the product (decided)
 
-One model, two substrates, one interface contract:
+The **Bivdi Runtime** (Linux, hardened) is the product. The microkernel **Bivdi Core** is a parked research track, deferred indefinitely (`P-001`). One interface contract (the WIT IDL, `D-015`) is retained so a program written against it runs on any future Core unchanged.
 
-| Track | Substrate | Purpose |
+| Track | Substrate | Status |
 |---|---|---|
-| **Bivdi Runtime** | Linux (hardened) | Prove the model, give a fast SDK |
-| **Bivdi Core** | Microkernel (seL4 proposed), VM guest first | The product; small verified core is the value |
-
-A program written against the shared IDL/API runs on either track unchanged.
+| **Bivdi Runtime** | Linux (hardened) | **The product** |
+| **Bivdi Core** | Microkernel (seL4 proposed) | Parked research; not on the critical path |
 
 ---
 
