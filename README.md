@@ -7,7 +7,7 @@
 
 - **Project:** Bivdi
 - **Domain:** [bivdi.com](https://bivdi.com)
-- **Status:** Concept / planning. Nothing is implemented.
+- **Status:** Concept / planning. Phase 0: the Bivdi Runtime on Linux is in progress (see [`runtime/`](runtime/)).
 - **Document:** Project overview and decisions
 
 ---

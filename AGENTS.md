@@ -75,7 +75,19 @@ rfcs/       all design decisions with rationale
 
 ## Build & test
 
-No build system exists yet. When the first code lands, establish (and document here) the canonical commands for build, test, lint, and fuzz, and keep them reproducible.
+The Bivdi Runtime (`runtime/`) is the first code in the repository.
+
+```sh
+cd runtime
+cargo build --workspace     # build
+cargo test --workspace      # test
+cargo clippy --workspace --all-targets -- -D warnings  # lint (CI gate)
+cargo fmt --all --check     # format check (CI gate)
+```
+
+- **Rust workspace** under `runtime/`, crates `bivdi-object`, `bivdi-cap`, `bivdi-state`, `bivdi-cli`.
+- CI runs `fmt`, `build`, `clippy` (deny warnings), and `test` on every PR to `main`.
+- `target/` is git-ignored; never commit build artifacts.
 
 ## Version control
 

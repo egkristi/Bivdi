@@ -1,0 +1,10 @@
+[package]
+name = "bivdi-object"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi object store: content-addressed blobs, CAS cells, catalogs, snapshots"
+
+[dependencies]
+blake3.workspace = true

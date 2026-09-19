@@ -2,7 +2,7 @@
 
 **Status:** Applies from day one. These rules reflect the project's decided working practices; they are not architectural decisions.
 
-Bivdi is at the concept/planning stage — there is no build system and no code yet. Contributions today are primarily documentation, specifications, and RFCs. The process below still applies.
+Bivdi is at the concept/planning stage. The first code is the **Bivdi Runtime** under `runtime/` (Phase 0). Contributions today are primarily documentation, specifications, RFCs, and the runtime. The process below applies throughout.
 
 ---
 
