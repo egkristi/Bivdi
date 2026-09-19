@@ -28,6 +28,7 @@ dependencies = [
  "bivdi-agent",
  "bivdi-cap",
  "bivdi-event",
+ "bivdi-identity",
  "bivdi-object",
  "bivdi-state",
  "serde_json",
@@ -37,6 +38,15 @@ dependencies = [
 name = "bivdi-event"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "bivdi-identity"
+version = "0.1.0"
+dependencies = [
+ "bivdi-cap",
  "serde",
  "serde_json",
 ]

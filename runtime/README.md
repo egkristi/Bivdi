@@ -17,6 +17,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 | `bivdi-state` | The **state engine**: desired state, reconciliation, immutable generations. |
 | `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
 | `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
+| `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)

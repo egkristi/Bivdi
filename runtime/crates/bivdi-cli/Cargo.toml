@@ -12,4 +12,5 @@ bivdi-cap = { path = "../bivdi-cap" }
 bivdi-state = { path = "../bivdi-state" }
 bivdi-agent = { path = "../bivdi-agent" }
 bivdi-event = { path = "../bivdi-event" }
+bivdi-identity = { path = "../bivdi-identity" }
 serde_json.workspace = true
