@@ -152,6 +152,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bivdi-net"
+version = "0.1.0"
+dependencies = [
+ "bivdi-cap",
+]
+
+[[package]]
 name = "bivdi-object"
 version = "0.1.0"
 dependencies = [

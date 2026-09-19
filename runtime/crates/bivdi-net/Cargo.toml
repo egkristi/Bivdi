@@ -1,0 +1,10 @@
+[package]
+name = "bivdi-net"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi networking model: identity-based endpoints and flow capabilities"
+
+[dependencies]
+bivdi-cap = { path = "../bivdi-cap" }

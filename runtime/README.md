@@ -25,6 +25,7 @@ Phase 1 is blocked on `P-001`.
 | `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
 | `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
 | `bivdi-wasm` | The **WASI runtime**: executes WASI modules with an explicit, least-authority capability context. |
+| `bivdi-net` | The **networking model**: identity-based endpoints and flow capabilities (no raw sockets). |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)
