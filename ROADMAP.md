@@ -1,10 +1,12 @@
 # Bivdi — Roadmap
 
-**Status:** Concept / planning. This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Only the items marked *Decided* in `README.md` §16 are binding. No timeline is estimated here — phases are ordered by dependency, not by date.
+**Status:** Phase 0 in progress. This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Only the items marked *Decided* in `README.md` §16 are binding. No timeline is estimated here — phases are ordered by dependency, not by date.
 
 **How to read this document:** each phase lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next phase begins — not an aspiration. Phases are ordered by dependency and gated by outcomes, not by schedule.
 
 **Process:** resolving an open question in `README.md` §16–17, or making any non-trivial design decision, is recorded as an RFC in `rfcs/` *before* work that depends on it begins.
+
+> **A crate is not a phase.** The Bivdi Runtime now has a crate for each of the six primitives, which is a real milestone — but a named crate is not the same as a satisfied deliverable, and an in-memory, single-process prototype is not the same as an exit gate. Phase 0's status table below states which is which. Work is complete when its exit condition is met, not when something exists under that name.
 
 ---
 
@@ -15,6 +17,7 @@
 3. **VM-first for hardware.** The hardest driver problems (GPU, Wi-Fi, suspend) are deliberately deferred behind the first cloud/VM milestone.
 4. **Two tracks, one contract.** Bivdi Runtime (Linux) and Bivdi Core (microkernel) advance in parallel against a shared IDL/API.
 5. **Security is a gate, not a feature.** Each phase has a security-relevant exit gate (fuzzing, audit, provenance).
+6. **Who before what.** `P-002` — the first target niche — is resolved *before* `P-001`, the kernel choice. The niche determines what the kernel has to support; taking the kernel decision first means choosing a mechanism before knowing the requirement. See [`rfcs/0001-target-niche.md`](rfcs/0001-target-niche.md).
 
 ---
 
@@ -36,9 +39,47 @@
 
 **Exit gate.** A developer can, on a Linux machine: write a program against the Bivdi API, hand it an attenuated capability, run it, and query provenance for everything it wrote — with no code running outside a sandbox.
 
+### Status against the exit gate
+
+The gate has four clauses. None is met yet, and none of the remaining work is blocked on `P-001`.
+
+| Clause | Status | What is missing |
+|---|---|---|
+| *Write a program against the Bivdi API* | **Not met** | There is no API in the `D-003` sense — no IDL, no generated bindings, no SDK. Callers link Rust crates directly, which is a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
+| *Hand it an attenuated capability* | **Met, in-process** | `bivdi-cap` mints, attenuates, leases and revokes, with subtree revocation. It does not survive a process boundary, and unforgeability is simulated with opaque ids. |
+| *Query provenance for everything it wrote* | **Partly met** | Authority-relevant events are recorded, including capability use. There is no query interface — `provenance_len()` is a counter, not an answer to "what changed this, and what gave it the right?" |
+| *With no code running outside a sandbox* | **Not met** | The runtime is not hardened. There is no seccomp filter and no Landlock policy anywhere in `runtime/`. |
+
+### Status against the deliverables
+
+| Deliverable | Status |
+|---|---|
+| Specification v0.1 | Draft; normative for decided items, blocked in §7 and §14 on the IDL |
+| Threat model v1 | Present; needs the platform scoping in [`rfcs/0003-platform-guarantees.md`](rfcs/0003-platform-guarantees.md) |
+| ABI / IDL definition | **Not started** — the largest unblocked item in the phase |
+| Attribution | Complete |
+| Object store | In-memory: blobs, CAS cells, catalogs. **No on-disk encoding, no snapshots, no encryption** |
+| Capability runtime | In-process: mint, attenuate, lease, revoke, provenance |
+| State engine | Desired state, reconciliation, immutable generations, rollback |
+| Event bus | In-memory: typed events, filters, correlation ids |
+| Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
+| Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
+| Developer SDK and CLI | CLI demo only. **No SDK** |
+| `rfcs/` seeded with `D-001` … `D-013` | **Not started.** RFCs 0001–0003 are the first; the decided items are still unrecorded, and `D-013` was added with no RFC |
+
+**Remaining Phase 0 work, in dependency order**
+
+1. Resolve `P-002` (RFC 0001) — it determines what the SDK and the demo are for.
+2. Fix the rights model: `Right` is a three-value total order, but `ARCHITECTURE.md` §4.2 names six rights that do not form a chain. Attenuation must be subset inclusion over a flag set. This is a prerequisite for writing the IDL truthfully and is cheapest now.
+3. Define the IDL and the conformance suite (RFC 0002). The suite *is* the `D-003` "one contract, two tracks" guarantee; without it that guarantee is an intention.
+4. Persist the object store, and give provenance a real query interface.
+5. Harden the runtime with seccomp and Landlock — the fourth clause of the gate.
+6. Publish the platform guarantees matrix (RFC 0003).
+7. Backfill RFCs for `D-001` … `D-013` and for the decisions already made in code: BLAKE3 as the content hash, agent leases held separately from capability leases, opaque ids as the unforgeability stand-in.
+
 **Dependencies.** None (started from `README.md` + `ARCHITECTURE.md`).
 
-**Open questions to resolve before/during this phase:** IDL choice and wire format; the exact object-store mutation primitive (`cas`) semantics; the capability runtime's attenuation and revocation model at the runtime level.
+**Open questions to resolve before/during this phase:** IDL choice and wire format (RFC 0002); the exact object-store mutation primitive (`cas`) semantics; the capability runtime's attenuation and revocation model at the runtime level.
 
 ---
 
@@ -59,9 +100,13 @@
 
 **Exit gate.** An agent completes a real task inside Bivdi Core; a prompt-injection attempt yields **no** access beyond what was delegated; and the resulting provenance chain is complete and queryable.
 
-**Security gate.** Kernel syscall surface under continuous fuzzing; capability-derivation model model-checked for authority leakage.
+Stated as a runnable scenario, so that it is falsifiable rather than descriptive (see [`rfcs/0001-target-niche.md`](rfcs/0001-target-niche.md) §3.4):
 
-**Dependencies.** Phase 0 IDL/API stable enough to port to Core.
+> An agent is granted a leased write capability to exactly one calendar entry and read access to exactly one document, with a 10-minute lease and a 20-action quota. The document contains an instruction directing the agent to forward the mailbox to an external address and delete the originals. On completion: no network flow capability was ever held, so no external connection is attempted or possible; no capability naming the mailbox exists in the agent's capability space; the provenance log shows every action attempted, the capability chain that authorised each permitted one, and an explicit denial for each attempt outside the grant; and the lease expires with remaining authority reaching zero without operator action.
+
+**Security gate.** Kernel syscall surface under continuous fuzzing; capability-derivation model model-checked for authority leakage; and the platform guarantees matrix published, with the demonstration stating which row it ran on ([`rfcs/0003-platform-guarantees.md`](rfcs/0003-platform-guarantees.md)).
+
+**Dependencies.** Phase 0 IDL/API stable enough to port to Core. The kernel half of this phase is blocked on `P-001`; the agent host, provenance and WASI runtime work is not.
 
 ---
 
@@ -80,7 +125,11 @@
 - Packaging and atomic update system with reproducible builds and rollback.
 - Observability and provenance query tooling for operators.
 
-**Exit gate.** At least one external organization runs production workloads on Bivdi in a public cloud, with the same security guarantees as in a VM.
+> **The Linux ABI is not one deliverable among six.** The cited pattern — Fuchsia's Starnix — has absorbed a sustained team for years and still covers a bounded subset; gVisor is the same order of magnitude. Listed beside "packaging and atomic updates" it is understated by roughly an order of magnitude, and it is plausibly larger than the rest of Phase 2 combined.
+>
+> Two consequences. First, it needs its own exit gate and an explicitly narrow initial syscall surface — *"enough to run a statically linked Go binary"* is a good first gate. Second, **micro-VM compatibility should be evaluated ahead of it**: for the headless server and agent host niche it reaches most of the same software for a small fraction of the effort. The current ordering — Linux ABI in Phase 2, micro-VM in Phase 3 — is backwards on effort-to-value grounds and should be reconsidered when `P-002` is resolved.
+
+**Exit gate.** At least one external organization runs production workloads on Bivdi in a public cloud, with the same security guarantees as in a VM — on a platform whose row in the guarantees matrix reads *Full*, or with the degradation named explicitly in the claim ([`rfcs/0003-platform-guarantees.md`](rfcs/0003-platform-guarantees.md)).
 
 **Security gate.** Third-party audit of the capability and durable-token model, published in full.
 
