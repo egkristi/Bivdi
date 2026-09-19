@@ -2,7 +2,7 @@
 //!
 //! Implements the decided capability properties from `docs/capabilities.md`:
 //! - **unforgeable** (opaque ids in-process; a stand-in for kernel enforcement),
-//! - **transferable**, **attenuable** (monotonically narrowing rights),
+//! - **transferable**, **attenuable** (subset-inclusion attenuation only),
 //! - **revocable** (a revoke invalidates the whole derived subtree),
 //! - **leases** (time-bounded grants),
 //! - **provenance** (an append-only record of authority-relevant events).
@@ -17,13 +17,56 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
-/// Rights over a resource. Ordering is by inclusion: `READ < WRITE < GRANT`.
-/// Rights can only ever be narrowed (attenuated), never widened.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum Right {
-    Read,
-    Write,
-    Grant,
+/// Rights over a resource, as a flag set (RFC 0002 §5). The six rights named in
+/// `ARCHITECTURE.md` §4.2 — read, write, execute, grant, signal, revoke — are
+/// *independent*; `EXECUTE` is not "less than" `WRITE`. Attenuation is
+/// **subset inclusion**: a derived capability holds a subset of its source's
+/// rights, never a right the source did not hold.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Rights(u8);
+
+impl Rights {
+    pub const READ: Rights = Rights(0b00_0001);
+    pub const WRITE: Rights = Rights(0b00_0010);
+    pub const EXECUTE: Rights = Rights(0b00_0100);
+    pub const GRANT: Rights = Rights(0b00_1000);
+    pub const SIGNAL: Rights = Rights(0b01_0000);
+    pub const REVOKE: Rights = Rights(0b10_0000);
+
+    /// No rights.
+    pub const NONE: Rights = Rights(0);
+    /// Every right.
+    pub const ALL: Rights = Rights(0b11_1111);
+
+    /// `true` if `self` is a superset of `other` (holds every right in `other`).
+    pub fn contains(self, other: Rights) -> bool {
+        self.0 & other.0 == other.0
+    }
+
+    /// The rights common to both sets.
+    pub fn intersection(self, other: Rights) -> Rights {
+        Rights(self.0 & other.0)
+    }
+
+    /// `true` if no right is held.
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl std::ops::BitOr for Rights {
+    type Output = Rights;
+    fn bitor(self, rhs: Rights) -> Rights {
+        Rights(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitAnd for Rights {
+    type Output = Rights;
+    fn bitand(self, rhs: Rights) -> Rights {
+        Rights(self.0 & rhs.0)
+    }
 }
 
 /// A resource a capability points at. In Phase 0 a resource is a name-scoped
@@ -36,7 +79,7 @@ pub struct Resource(pub u64);
 pub struct Capability {
     id: u64,
     resource: Resource,
-    right: Right,
+    right: Rights,
 }
 
 impl Capability {
@@ -44,7 +87,7 @@ impl Capability {
         self.resource
     }
 
-    pub fn right(&self) -> Right {
+    pub fn right(&self) -> Rights {
         self.right
     }
 }
@@ -79,12 +122,12 @@ pub enum Event {
     Minted {
         cap: u64,
         resource: Resource,
-        right: Right,
+        right: Rights,
     },
     Attenuated {
         from: u64,
         to: u64,
-        right: Right,
+        right: Rights,
     },
     Revoked {
         cap: u64,
@@ -93,8 +136,30 @@ pub enum Event {
     Acted {
         cap: u64,
         resource: Resource,
-        right: Right,
+        right: Rights,
     },
+    /// An action was attempted but the capability did not grant the requested
+    /// right (or the lease had expired). Recording denials explicitly is what
+    /// makes RFC 0001 §3.4 clause 3 testable: every attempt outside the grant
+    /// leaves a denial in the log, rather than vanishing silently.
+    Denied {
+        cap: u64,
+        resource: Resource,
+        right: Rights,
+    },
+}
+
+impl Event {
+    /// The resource this event concerns, if any. Mint, Act, and Denied carry
+    /// the resource; Attenuated and Revoked carry only capability ids.
+    pub fn resource(&self) -> Option<Resource> {
+        match self {
+            Event::Minted { resource, .. }
+            | Event::Acted { resource, .. }
+            | Event::Denied { resource, .. } => Some(*resource),
+            Event::Attenuated { .. } | Event::Revoked { .. } => None,
+        }
+    }
 }
 
 /// The capability runtime. Mints, attenuates, and revokes capabilities while
@@ -113,8 +178,8 @@ impl CapRuntime {
         Self::default()
     }
 
-    /// Mint a new root capability with the given right over a resource.
-    pub fn mint(&mut self, resource: Resource, right: Right) -> Capability {
+    /// Mint a new root capability with the given rights over a resource.
+    pub fn mint(&mut self, resource: Resource, right: Rights) -> Capability {
         let id = self.alloc();
         self.caps.insert(
             id,
@@ -140,22 +205,26 @@ impl CapRuntime {
     }
 
     /// Mint a new root capability with a lease.
-    pub fn mint_leased(&mut self, resource: Resource, right: Right, lease: Lease) -> Capability {
+    pub fn mint_leased(&mut self, resource: Resource, right: Rights, lease: Lease) -> Capability {
         let cap = self.mint(resource, right);
         self.caps.get_mut(&cap.id).unwrap().1 = Some(lease);
         cap
     }
 
-    /// Attenuate `source` to a strictly weaker (or equal) right over the same
-    /// resource. Attenuation never requires authority.
-    pub fn attenuate(&mut self, source: &Capability, right: Right) -> Result<Capability, CapError> {
+    /// Attenuate `source` to a subset of its rights over the same resource.
+    /// Attenuation never requires authority.
+    pub fn attenuate(
+        &mut self,
+        source: &Capability,
+        right: Rights,
+    ) -> Result<Capability, CapError> {
         let (resource, held_right, lease) = {
             let (src, lease) = self.caps.get(&source.id).ok_or(CapError::NotHeld)?;
             (src.resource, src.right, *lease)
         };
-        if right > held_right {
-            // Rights are ordered READ < WRITE < GRANT; a larger right is a
-            // widening, which is disallowed.
+        // Attenuation is subset inclusion: the derived rights must be a subset
+        // of the held rights. Any right the source did not hold is a widening.
+        if !held_right.contains(right) {
             return Err(CapError::WideningDenied);
         }
         let id = self.alloc();
@@ -176,7 +245,7 @@ impl CapRuntime {
 
     /// Check that a capability is currently held, unexpired, and grants at
     /// least `required` right over `resource`.
-    pub fn check(&self, cap: &Capability, resource: Resource, required: Right) -> bool {
+    pub fn check(&self, cap: &Capability, resource: Resource, required: Rights) -> bool {
         match self.caps.get(&cap.id) {
             Some((held, lease)) => {
                 if let Some(l) = lease {
@@ -184,7 +253,7 @@ impl CapRuntime {
                         return false;
                     }
                 }
-                held.resource == resource && held.right >= required
+                held.resource == resource && held.right.contains(required)
             }
             None => false,
         }
@@ -207,9 +276,11 @@ impl CapRuntime {
     }
 
     /// Record that `cap` was used to exercise `right` over `resource`.
-    /// Returns `false` (and records nothing) if the capability is not held or
-    /// does not grant the right.
-    pub fn record_use(&mut self, cap: &Capability, resource: Resource, right: Right) -> bool {
+    /// On success, records an `Acted` event and returns `true`. On failure
+    /// (not held, expired, or right not granted), records an explicit `Denied`
+    /// event and returns `false` — a denial is itself authority-relevant and
+    /// must never vanish from the log (RFC 0001 §3.4 clause 3).
+    pub fn record_use(&mut self, cap: &Capability, resource: Resource, right: Rights) -> bool {
         if self.check(cap, resource, right) {
             self.provenance.push(Event::Acted {
                 cap: cap.id,
@@ -218,6 +289,11 @@ impl CapRuntime {
             });
             true
         } else {
+            self.provenance.push(Event::Denied {
+                cap: cap.id,
+                resource,
+                right,
+            });
             false
         }
     }
@@ -235,6 +311,35 @@ impl CapRuntime {
     /// The append-only provenance log.
     pub fn provenance(&self) -> &[Event] {
         &self.provenance
+    }
+
+    /// Query the provenance log for every authority event naming `resource`, in
+    /// append order. This is the operator-facing query — "what touched this
+    /// object, and what authorised each touch?" — a structured answer, not a
+    /// raw log dive.
+    pub fn provenance_for_resource(&self, resource: Resource) -> Vec<Event> {
+        self.provenance
+            .iter()
+            .filter(|e| e.resource() == Some(resource))
+            .cloned()
+            .collect()
+    }
+
+    /// Query the provenance log for every event in one capability's authority
+    /// chain — its mint, the attenuations into and out of it, its uses, its
+    /// denials, and its revocation — in append order.
+    pub fn provenance_for_capability(&self, cap: u64) -> Vec<Event> {
+        self.provenance
+            .iter()
+            .filter(|e| match e {
+                Event::Minted { cap: c, .. }
+                | Event::Revoked { cap: c }
+                | Event::Acted { cap: c, .. }
+                | Event::Denied { cap: c, .. } => *c == cap,
+                Event::Attenuated { from, to, .. } => *from == cap || *to == cap,
+            })
+            .cloned()
+            .collect()
     }
 
     fn alloc(&mut self) -> u64 {
@@ -258,35 +363,51 @@ mod tests {
     #[test]
     fn attenuation_never_widens() {
         let mut rt = CapRuntime::new();
-        let root = rt.mint(Resource(1), Right::Read);
-        assert!(rt.attenuate(&root, Right::Read).is_ok());
+        let root = rt.mint(Resource(1), Rights::READ);
+        assert!(rt.attenuate(&root, Rights::READ).is_ok());
         assert!(matches!(
-            rt.attenuate(&root, Right::Write),
+            rt.attenuate(&root, Rights::WRITE),
             Err(CapError::WideningDenied)
         ));
     }
 
     #[test]
+    fn attenuation_is_subset_inclusion_not_ordering() {
+        // EXECUTE is not "less than" WRITE: a Write holder cannot attenuate to
+        // Execute because Execute is not a subset of Write (RFC 0002 §5).
+        let mut rt = CapRuntime::new();
+        let root = rt.mint(Resource(1), Rights::WRITE);
+        assert!(matches!(
+            rt.attenuate(&root, Rights::EXECUTE),
+            Err(CapError::WideningDenied)
+        ));
+        // But WRITE|READ can attenuate to READ (a subset).
+        let rw = rt.mint(Resource(2), Rights::WRITE | Rights::READ);
+        assert!(rt.attenuate(&rw, Rights::READ).is_ok());
+    }
+
+    #[test]
     fn check_requires_right_and_resource() {
         let mut rt = CapRuntime::new();
-        let root = rt.mint(Resource(7), Right::Read);
-        let derived = rt.attenuate(&root, Right::Read).unwrap();
-        assert!(rt.check(&derived, Resource(7), Right::Read));
-        assert!(!rt.check(&derived, Resource(7), Right::Write));
-        assert!(!rt.check(&derived, Resource(8), Right::Read));
+        let root = rt.mint(Resource(7), Rights::READ);
+        let derived = rt.attenuate(&root, Rights::READ).unwrap();
+        assert!(rt.check(&derived, Resource(7), Rights::READ));
+        assert!(!rt.check(&derived, Resource(7), Rights::WRITE));
+        assert!(!rt.check(&derived, Resource(8), Rights::READ));
     }
 
     #[test]
     fn revoke_kills_subtree() {
         let mut rt = CapRuntime::new();
-        let root = rt.mint(Resource(1), Right::Grant);
-        let a = rt.attenuate(&root, Right::Write).unwrap();
-        let b = rt.attenuate(&a, Right::Read).unwrap();
-        assert!(rt.check(&b, Resource(1), Right::Read));
+        let root = rt.mint(Resource(1), Rights::ALL);
+        // A valid subset chain: ALL -> READ|WRITE -> READ.
+        let a = rt.attenuate(&root, Rights::READ | Rights::WRITE).unwrap();
+        let b = rt.attenuate(&a, Rights::READ).unwrap();
+        assert!(rt.check(&b, Resource(1), Rights::READ));
         rt.revoke(&a);
-        assert!(!rt.check(&b, Resource(1), Right::Read));
+        assert!(!rt.check(&b, Resource(1), Rights::READ));
         // Root (parent) is unaffected.
-        assert!(rt.check(&root, Resource(1), Right::Grant));
+        assert!(rt.check(&root, Resource(1), Rights::GRANT));
     }
 
     #[test]
@@ -294,19 +415,34 @@ mod tests {
         let mut rt = CapRuntime::new();
         let short = rt.mint_leased(
             Resource(1),
-            Right::Read,
+            Rights::READ,
             Lease::new(Duration::from_millis(1)),
         );
         std::thread::sleep(Duration::from_millis(5));
-        assert!(!rt.check(&short, Resource(1), Right::Read));
+        assert!(!rt.check(&short, Resource(1), Rights::READ));
     }
 
     #[test]
     fn provenance_is_append_only() {
         let mut rt = CapRuntime::new();
-        let root = rt.mint(Resource(1), Right::Read);
+        let root = rt.mint(Resource(1), Rights::READ);
         let n0 = rt.provenance().len();
-        let _ = rt.attenuate(&root, Right::Read).unwrap();
+        let _ = rt.attenuate(&root, Rights::READ).unwrap();
         assert_eq!(rt.provenance().len(), n0 + 1);
+    }
+
+    #[test]
+    fn provenance_is_queryable_by_resource() {
+        let mut rt = CapRuntime::new();
+        let a = rt.mint(Resource(1), Rights::WRITE);
+        let b = rt.mint(Resource(2), Rights::READ);
+        rt.record_use(&a, Resource(1), Rights::WRITE);
+        rt.record_use(&b, Resource(2), Rights::READ);
+
+        let for_one = rt.provenance_for_resource(Resource(1));
+        assert!(!for_one.is_empty());
+        assert!(for_one.iter().all(|e| e.resource() == Some(Resource(1))));
+        assert_eq!(rt.provenance_for_resource(Resource(2)).len(), 2); // mint + act
+        assert!(rt.provenance_for_resource(Resource(99)).is_empty());
     }
 }

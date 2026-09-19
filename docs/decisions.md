@@ -59,7 +59,7 @@ RFCs in flight. None is binding until accepted; an accepted RFC updates this fil
 
 - `D-001` … `D-013` — the entire decided list predates any RFC. `D-013` was added most recently, still without one. (`D-014` and `D-015` are covered by RFCs 0001 and 0002.)
 - **BLAKE3** as the content-addressing hash — implemented, marked "provisional" only in a doc comment.
-- **`Right` as a three-value total order** — contradicts the six rights named in `ARCHITECTURE.md` §4.2, which do not form a chain. See `rfcs/0002` §5.
+- ~~**`Right` as a three-value total order**~~ — **resolved** in code: `Right` is now `Rights`, a six-flag set (`read, write, execute, grant, signal, revoke`) with subset-inclusion attenuation, per RFC 0002 §5. The three-value ordered enum is gone.
 - **Agent leases held separately from capability leases** — a real semantic choice, currently undocumented outside the code.
 - **Opaque in-process ids** as the stand-in for unforgeability on the Runtime track.
 - **The event-kind string taxonomy** in `bivdi-event`.

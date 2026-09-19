@@ -1,0 +1,265 @@
+// Bivdi core interfaces — `bivdi:core@0.1.0`.
+//
+// This is the language-neutral contract (RFC 0002, `D-015`). It is the one
+// thing the Runtime (today) and any future Core (later) share: a program
+// written against these interfaces runs on either unchanged.
+//
+// Rule (RFC 0002 §3.5): **no seL4 concept enters this IDL.** Capabilities,
+// objects, events, and state are expressed in WIT terms only — resources,
+// records, variants, flags, streams — never kernel vocabulary. The kernel
+// (`P-001`, deferred) is an implementation of this contract, not a vocabulary
+// it borrows.
+//
+// NOTE: this file documents the contract and is kept in sync with the Rust
+// implementation by hand. Generated bindings (`wit-bindgen`) are a later
+// milestone; the types here are the source of truth the Rust conforms to.
+
+package bivdi:core@0.1.0;
+
+/// The six rights from `ARCHITECTURE.md` §4.2, as a flag set. Rights are
+/// **independent** — `execute` is not "less than" `write`. Attenuation is
+/// subset inclusion (RFC 0002 §5).
+flags rights {
+    read,
+    write,
+    execute,
+    grant,
+    signal,
+    revoke,
+}
+
+/// A content-addressed object in the store. The handle is opaque; there is no
+/// root, no path, and no upward walk (objects-over-paths invariant).
+interface objects {
+    /// An immutable, content-addressed blob, named by its content hash.
+    record blob {
+        hash: list<u8>,
+        data: list<u8>,
+    }
+
+    /// The only mutation primitive: a single-slot cell updated by CAS.
+    resource cell {
+        read: func() -> option<list<u8>>;
+        /// Compare-and-swap. `expected` and `new` are content hashes.
+        cas: func(expected: option<list<u8>>, new: option<list<u8>>)
+            -> result<_, cas-error>;
+    }
+
+    /// A catalog maps names to handles; it cannot be walked upward from.
+    resource catalog {
+        get: func(name: string) -> option<handle>;
+        put: func(name: string, target: handle) -> result<_, object-error>;
+    }
+
+    /// An opaque handle to an object or catalog.
+    resource handle;
+
+    variant object-error {
+        not-a-catalog,
+        corrupt-snapshot,
+    }
+
+    variant cas-error {
+        /// The actual value observed when a CAS misses.
+        stale(actual: option<list<u8>>),
+    }
+}
+
+/// Capabilities: unforgeable, attenuable (subset inclusion), revocable
+/// (subtree), leased, and provenance-logged.
+interface capabilities {
+    /// A resource a capability points at.
+    resource resource;
+
+    /// A capability grants a set of `rights` over a `resource`.
+    resource cap {
+        /// The rights this capability holds.
+        rights: func() -> rights;
+        /// The resource this capability names.
+        resource: func() -> resource;
+        /// Attenuate to a subset of the held rights. Widening is an error.
+        attenuate: func(to: rights) -> result<cap, cap-error>;
+    }
+
+    variant cap-error {
+        not-held,
+        widening-denied,
+    }
+
+    /// Authority-relevant provenance events. Never content.
+    record event {
+        /// One of: minted, attenuated, acted, denied, revoked.
+        kind: string,
+        /// The capability id this event concerns, where applicable.
+        cap: option<u64>,
+        /// The resource this event concerns, where applicable.
+        resource: option<u64>,
+        /// The rights exercised or denied, where applicable.
+        rights: option<rights>,
+    }
+
+    /// The capability runtime.
+    resource runtime {
+        /// Owner-only: mint a root capability.
+        mint: func(resource: u64, rights: rights) -> cap;
+        /// Record a use; returns `false` (and records a denial) if not granted.
+        record-use: func(cap: cap, resource: u64, rights: rights) -> bool;
+        /// Revoke a capability and its entire derived subtree.
+        revoke: func(cap: cap);
+        /// Query provenance for a resource.
+        provenance-for-resource: func(resource: u64) -> list<event>;
+        /// Query provenance for a capability's authority chain.
+        provenance-for-capability: func(cap: u64) -> list<event>;
+    }
+}
+
+/// The state engine: desired state, reconciliation, immutable generations,
+/// transactional rollback.
+interface state {
+    record desired-state {
+        /// Workload name → target replica count.
+        workloads: list<tuple<string, u64>>,
+    }
+
+    variant action {
+        start(workload: string, count: u64),
+        stop(workload: string, count: u64),
+    }
+
+    resource engine {
+        /// Apply a new desired state as an immutable generation.
+        apply: func(desired: desired-state) -> u64;
+        /// Reconcile desired vs. observed, returning ordered actions.
+        reconcile: func() -> list<action>;
+        /// Roll back to the previous generation (a pointer change).
+        rollback: func() -> result<u64, state-error>;
+    }
+
+    variant state-error {
+        no-previous-generation,
+    }
+}
+
+/// The event bus: typed, first-class events with correlation identity.
+interface events {
+    /// A correlation id traces one action across components.
+    record correlation-id {
+        value: u64,
+    }
+
+    /// First-class event kinds (representative, not exhaustive).
+    variant event {
+        object-created(object: string),
+        object-changed(object: string),
+        object-deleted(object: string),
+        capability-granted(cap: u64),
+        capability-used(cap: u64),
+        capability-denied(cap: u64),
+        capability-revoked(cap: u64),
+        generation-activated(generation: u64),
+        rollback-started(to: u64),
+    }
+
+    resource bus {
+        publish: func(correlation: u64, event: event);
+        subscribe: func() -> u64;
+        drain: func(subscriber: u64) -> list<event>;
+        history: func() -> list<event>;
+    }
+}
+
+/// Identity: kinds, fingerprints, petnames, selective disclosure.
+interface identity {
+    variant kind {
+        person,
+        device,
+        workload,
+        service,
+        organization,
+    }
+
+    record identity {
+        fingerprint: list<u8>,
+        /// The claimed name is hidden by default (petnames are the display).
+        claimed-name: string,
+        kind: kind,
+    }
+
+    resource service {
+        register: func(id: identity);
+        /// Assign a local petname to a fingerprint.
+        assign-petname: func(fingerprint: list<u8>, petname: string);
+        /// Display name: petname if set, else kind.
+        display-name: func(fingerprint: list<u8>) -> string;
+    }
+}
+
+/// The agent host: capability-constrained, time-limited, quota-bound agents.
+interface agents {
+    use capabilities.{rights};
+    use state.{action};
+
+    record quota {
+        max-actions: u64,
+        max-delegations: u64,
+    }
+
+    /// A proposed step in an agent's plan. This is *data*, not instructions:
+    /// the host enforces it against the agent's held capability.
+    record step {
+        resource: u64,
+        right: rights,
+    }
+
+    record plan {
+        steps: list<step>,
+    }
+
+    variant agent-error {
+        not-authorized,
+        expired,
+        quota-exceeded,
+        escalation-denied,
+    }
+
+    resource host {
+        /// Owner-only: mint a root capability.
+        mint-root: func(resource: u64, rights: rights) -> capabilities.cap;
+        /// Spawn an agent attenuated from a source capability.
+        spawn: func(source: capabilities.cap, rights: rights, ttl-ms: u64,
+            quota: quota) -> result<u64, agent-error>;
+        /// Execute one action on behalf of an agent.
+        execute: func(agent: u64, resource: u64, rights: rights)
+            -> result<_, agent-error>;
+        /// Execute a full plan (first failure aborts).
+        execute-plan: func(agent: u64, plan: plan) -> result<_, agent-error>;
+    }
+}
+
+/// Networking: identity-based endpoints and flow capabilities. No raw sockets.
+interface networking {
+    record service-name {
+        value: string,
+    }
+
+    record trust-anchors {
+        values: list<string>,
+    }
+
+    /// A flow capability: "you may connect to this endpoint with these trust
+    /// anchors." The only networking authority a component can hold.
+    record flow {
+        endpoint: service-name,
+        anchors: trust-anchors,
+    }
+
+    resource service {
+        /// Owner-only: register a service and receive its grant capability.
+        register: func(name: service-name) -> capabilities.cap;
+        /// Resolve an identity name to a flow — DNS as a capability decision.
+        resolve: func(name: service-name) -> option<flow>;
+        /// Issue a flow for a registered service.
+        grant-flow: func(name: service-name, anchors: trust-anchors)
+            -> option<flow>;
+    }
+}

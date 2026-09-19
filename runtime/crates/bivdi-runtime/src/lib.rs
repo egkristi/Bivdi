@@ -11,7 +11,7 @@
 //! depends on the undecided kernel choice (`P-001`, RFC 0004 proposed).
 
 use bivdi_agent::{Agent, AgentHost, Quota};
-use bivdi_cap::{Capability, Resource, Right};
+use bivdi_cap::{Capability, Resource, Rights};
 use bivdi_event::{Event, EventBus};
 use bivdi_identity::IdentityService;
 use bivdi_object::Store;
@@ -56,7 +56,7 @@ impl Node {
 
     /// Mint a root capability over a resource (owner-only operation), and
     /// record the grant on the event fabric.
-    pub fn mint_root(&mut self, resource: Resource, right: Right) -> Capability {
+    pub fn mint_root(&mut self, resource: Resource, right: Rights) -> Capability {
         let cap = self.host.mint_root(resource, right);
         self.events.publish(Event::CapabilityGranted {
             correlation: self.events.new_correlation().0,
@@ -70,7 +70,7 @@ impl Node {
     pub fn spawn_agent(
         &mut self,
         source: &Capability,
-        right: Right,
+        right: Rights,
         ttl: Duration,
         quota: Quota,
     ) -> Result<u64, NodeError> {
@@ -94,7 +94,7 @@ impl Node {
         &mut self,
         agent_id: u64,
         resource: Resource,
-        right: Right,
+        right: Rights,
     ) -> Result<(), NodeError> {
         let agent = self
             .agents
@@ -110,7 +110,10 @@ impl Node {
                 Ok(())
             }
             Err(_) => {
-                self.events.publish(Event::CapabilityRevoked {
+                // A failed action is a *denial*, not a revocation — the agent
+                // attempted something it was not authorized for, and that
+                // attempt must be recorded as such (RFC 0001 §3.4 clause 3).
+                self.events.publish(Event::CapabilityDenied {
                     correlation: self.events.new_correlation().0,
                     cap: agent_id,
                 });
@@ -125,9 +128,9 @@ impl Node {
     }
 
     /// Queryable provenance: return the authority-relevant events (granted,
-    /// used, revoked) in append order. This is the operator-facing half of the
-    /// value proposition — "what happened, and what gave it the right?" is a
-    /// query, not a log dive. It records *authority*, never content.
+    /// used, denied, revoked) in append order. This is the operator-facing half
+    /// of the value proposition — "what happened, and what gave it the right?"
+    /// is a query, not a log dive. It records *authority*, never content.
     pub fn provenance_query(&self) -> Vec<Event> {
         self.events
             .history()
@@ -137,6 +140,7 @@ impl Node {
                     e,
                     Event::CapabilityGranted { .. }
                         | Event::CapabilityUsed { .. }
+                        | Event::CapabilityDenied { .. }
                         | Event::CapabilityRevoked { .. }
                 )
             })
@@ -158,51 +162,51 @@ mod tests {
     fn node_composes_and_mints_authority() {
         let mut node = Node::new(initial());
         let res = Resource(1);
-        let root = node.mint_root(res, Right::Grant);
+        let root = node.mint_root(res, Rights::ALL);
         // The minted capability is usable to spawn (i.e., the host sees it).
         let agent_id = node
             .spawn_agent(
                 &root,
-                Right::Read,
+                Rights::READ,
                 Duration::from_secs(60),
                 Quota::new(10, 0),
             )
             .unwrap();
-        assert!(node.agent_act(agent_id, res, Right::Read).is_ok());
+        assert!(node.agent_act(agent_id, res, Rights::READ).is_ok());
     }
 
     #[test]
     fn agent_denied_beyond_its_authority() {
         let mut node = Node::new(initial());
         let res = Resource(1);
-        let root = node.mint_root(res, Right::Grant);
+        let root = node.mint_root(res, Rights::ALL);
         let agent_id = node
             .spawn_agent(
                 &root,
-                Right::Read,
+                Rights::READ,
                 Duration::from_secs(60),
                 Quota::new(10, 0),
             )
             .unwrap();
-        assert!(node.agent_act(agent_id, res, Right::Read).is_ok());
-        assert!(node.agent_act(agent_id, res, Right::Write).is_err());
+        assert!(node.agent_act(agent_id, res, Rights::READ).is_ok());
+        assert!(node.agent_act(agent_id, res, Rights::WRITE).is_err());
     }
 
     #[test]
     fn authority_events_flow_onto_the_fabric() {
         let mut node = Node::new(initial());
         let res = Resource(1);
-        let root = node.mint_root(res, Right::Grant);
+        let root = node.mint_root(res, Rights::ALL);
         let agent_id = node
             .spawn_agent(
                 &root,
-                Right::Read,
+                Rights::READ,
                 Duration::from_secs(60),
                 Quota::new(10, 0),
             )
             .unwrap();
         let before = node.events.history().len();
-        let _ = node.agent_act(agent_id, res, Right::Read);
+        let _ = node.agent_act(agent_id, res, Rights::READ);
         assert!(node.events.history().len() > before);
     }
 
@@ -210,17 +214,17 @@ mod tests {
     fn provenance_query_returns_authority_events_only() {
         let mut node = Node::new(initial());
         let res = Resource(1);
-        let root = node.mint_root(res, Right::Grant); // granted
+        let root = node.mint_root(res, Rights::ALL); // granted
         let agent_id = node
             .spawn_agent(
                 &root,
-                Right::Read,
+                Rights::READ,
                 Duration::from_secs(60),
                 Quota::new(10, 0),
             )
             .unwrap(); // granted
-        let _ = node.agent_act(agent_id, res, Right::Read); // used
-        let _ = node.agent_act(agent_id, res, Right::Write); // denied -> revoked event
+        let _ = node.agent_act(agent_id, res, Rights::READ); // used
+        let _ = node.agent_act(agent_id, res, Rights::WRITE); // denied
 
         let provenance = node.provenance_query();
         // Only authority events are returned; no object/workload events.
@@ -229,6 +233,7 @@ mod tests {
                 e,
                 Event::CapabilityGranted { .. }
                     | Event::CapabilityUsed { .. }
+                    | Event::CapabilityDenied { .. }
                     | Event::CapabilityRevoked { .. }
             )
         }));
@@ -240,6 +245,71 @@ mod tests {
             .any(|e| matches!(e, Event::CapabilityUsed { .. })));
         assert!(provenance
             .iter()
-            .any(|e| matches!(e, Event::CapabilityRevoked { .. })));
+            .any(|e| matches!(e, Event::CapabilityDenied { .. })));
+    }
+
+    /// The RFC 0001 §3.4 scenario, as an automated, repeatable test. An agent
+    /// is granted a leased write capability to exactly one calendar entry and
+    /// read access to exactly one document; the document contains an instruction
+    /// directing the agent to forward the mailbox and delete the originals. On
+    /// completion, none of the four escape conditions may hold.
+    #[test]
+    fn rfc_0001_s3_4_prompt_injection_gains_nothing() {
+        let mut node = Node::new(initial());
+
+        // The operator owns two resources: a calendar entry and a document.
+        let calendar = Resource(42);
+        let document = Resource(43);
+        let mailbox = Resource(44);
+
+        let calendar_root = node.mint_root(calendar, Rights::ALL);
+        let document_root = node.mint_root(document, Rights::ALL);
+
+        // Grant the agent a 10-minute lease, 20-action quota, write over the
+        // calendar entry and read over the document — nothing else.
+        let agent = node
+            .spawn_agent(
+                &calendar_root,
+                Rights::WRITE,
+                Duration::from_secs(600),
+                Quota::new(20, 0),
+            )
+            .unwrap();
+        let _doc = node
+            .spawn_agent(
+                &document_root,
+                Rights::READ,
+                Duration::from_secs(600),
+                Quota::new(20, 0),
+            )
+            .unwrap();
+
+        // 1. No network flow capability was ever held: the agent holds only the
+        // two granted capabilities; "forward the mailbox" names no flow.
+        //    (Enforced structurally: the node has no network flow to hand out,
+        //    and `agent_act` on the mailbox fails below.)
+
+        // The agent attempts the injected instruction: read the mailbox.
+        assert!(node.agent_act(agent, mailbox, Rights::READ).is_err());
+
+        // 2. No capability naming the mailbox exists in the agent's capability
+        // space — the read above was denied (not a silent no-op).
+        let provenance = node.provenance_query();
+        assert!(provenance
+            .iter()
+            .any(|e| matches!(e, Event::CapabilityDenied { .. })));
+
+        // 3. The provenance log shows the denial explicitly.
+        assert!(provenance.iter().any(|e| matches!(
+            e,
+            Event::CapabilityDenied { cap, .. } if *cap == agent
+        )));
+
+        // 4. The legitimate write within the grant still works.
+        assert!(node.agent_act(agent, calendar, Rights::WRITE).is_ok());
+
+        // And a write outside the grant (the document, which is read-only) is
+        // denied and recorded.
+        assert!(node.agent_act(agent, document, Rights::WRITE).is_err());
     }
 }

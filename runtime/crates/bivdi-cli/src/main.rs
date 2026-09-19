@@ -4,7 +4,7 @@
 //! bus, and identity service together to demonstrate the decided model.
 
 use bivdi_agent::{AgentHost, Quota};
-use bivdi_cap::{CapRuntime, Lease, Resource, Right};
+use bivdi_cap::{CapRuntime, Lease, Resource, Rights};
 use bivdi_event::{Event, EventBus, Filter};
 use bivdi_identity::{Identity, IdentityService, Kind};
 use bivdi_object::{blake3_hash, Store};
@@ -116,40 +116,40 @@ fn demo_capabilities() {
 
     // A resource standing in for a calendar object.
     let calendar = Resource(42);
-    let grant = rt.mint(calendar, Right::Grant);
+    let grant = rt.mint(calendar, Rights::ALL);
 
     // Attenuate to read-only. Widening is denied by construction.
-    let read_only = rt.attenuate(&grant, Right::Read).unwrap();
+    let read_only = rt.attenuate(&grant, Rights::READ).unwrap();
     println!("  attenuated to Read: ok");
-    let widening = rt.attenuate(&read_only, Right::Write);
+    let widening = rt.attenuate(&read_only, Rights::WRITE);
     println!("  widening Read -> Write denied = {}", widening.is_err());
 
     println!(
         "  read_only can read = {}",
-        rt.check(&read_only, calendar, Right::Read)
+        rt.check(&read_only, calendar, Rights::READ)
     );
     println!(
         "  read_only cannot write = {}",
-        !rt.check(&read_only, calendar, Right::Write)
+        !rt.check(&read_only, calendar, Rights::WRITE)
     );
 
     // Revoke the read-only subtree.
     rt.revoke(&read_only);
     println!(
         "  after revoke, read_only still valid = {}",
-        rt.check(&read_only, calendar, Right::Read)
+        rt.check(&read_only, calendar, Rights::READ)
     );
 
     // A lease that expires.
     let leased = rt.mint_leased(
         Resource(7),
-        Right::Read,
+        Rights::READ,
         Lease::new(Duration::from_millis(1)),
     );
     std::thread::sleep(Duration::from_millis(5));
     println!(
         "  expired lease still valid = {}",
-        rt.check(&leased, Resource(7), Right::Read)
+        rt.check(&leased, Resource(7), Rights::READ)
     );
 
     println!("  provenance events = {}", rt.provenance().len());
@@ -190,13 +190,13 @@ fn demo_agent_host() {
 
     // A "calendar" resource, owned by minting a root capability.
     let calendar = Resource(42);
-    let root = host.mint_root(calendar, Right::Grant);
+    let root = host.mint_root(calendar, Rights::ALL);
 
     // Spawn an agent from the root, attenuated to read-only, 10-action quota.
     let mut agent = host
         .spawn(
             &root,
-            Right::Read,
+            Rights::READ,
             Duration::from_secs(60),
             Quota::new(10, 1),
         )
@@ -206,18 +206,18 @@ fn demo_agent_host() {
     // It can read…
     println!(
         "  agent can read = {}",
-        host.execute(&mut agent, calendar, Right::Read).is_ok()
+        host.execute(&mut agent, calendar, Rights::READ).is_ok()
     );
     // …but not write (prompt-injection cannot grant write).
     println!(
         "  agent cannot write = {}",
-        host.execute(&mut agent, calendar, Right::Write).is_err()
+        host.execute(&mut agent, calendar, Rights::WRITE).is_err()
     );
 
     // It cannot delegate a wider right than it holds.
     let escalation = host.delegate(
         &mut agent,
-        Right::Write,
+        Rights::WRITE,
         Duration::from_secs(60),
         Quota::new(1, 0),
     );
@@ -227,15 +227,15 @@ fn demo_agent_host() {
     let mut small = host
         .spawn(
             &root,
-            Right::Read,
+            Rights::READ,
             Duration::from_secs(60),
             Quota::new(1, 0),
         )
         .unwrap();
-    host.execute(&mut small, calendar, Right::Read).unwrap();
+    host.execute(&mut small, calendar, Rights::READ).unwrap();
     println!(
         "  quota exhausted after 1 action = {}",
-        host.execute(&mut small, calendar, Right::Read).is_err()
+        host.execute(&mut small, calendar, Rights::READ).is_err()
     );
 
     println!("  provenance events = {}", host.provenance_len());
@@ -279,13 +279,13 @@ fn run_agent_scenario() {
 
     // A "calendar entry" resource the operator owns.
     let calendar = Resource(42);
-    let root = node.mint_root(calendar, Right::Grant);
+    let root = node.mint_root(calendar, Rights::ALL);
 
     // Grant the agent a leased, write-scoped capability to exactly one entry.
     let agent_id = node
         .spawn_agent(
             &root,
-            Right::Write,
+            Rights::WRITE,
             Duration::from_millis(150),
             Quota::new(20, 0),
         )
@@ -295,7 +295,7 @@ fn run_agent_scenario() {
     // The agent can write (within its grant)…
     println!(
         "  allowed write = {}",
-        node.agent_act(agent_id, calendar, Right::Write).is_ok()
+        node.agent_act(agent_id, calendar, Rights::WRITE).is_ok()
     );
 
     // …but a prompt-injection "forward the mailbox" is impossible: the agent
@@ -303,14 +303,14 @@ fn run_agent_scenario() {
     let mailbox = Resource(7);
     println!(
         "  mailbox read denied = {}",
-        node.agent_act(agent_id, mailbox, Right::Read).is_err()
+        node.agent_act(agent_id, mailbox, Rights::READ).is_err()
     );
 
     // After the lease expires, even the legitimate write is denied.
     std::thread::sleep(Duration::from_millis(200));
     println!(
         "  write after lease expiry denied = {}",
-        node.agent_act(agent_id, calendar, Right::Write).is_err()
+        node.agent_act(agent_id, calendar, Rights::WRITE).is_err()
     );
 
     println!(
@@ -319,7 +319,7 @@ fn run_agent_scenario() {
     );
     let provenance = node.provenance_query();
     println!(
-        "  authority provenance = {} events (granted/used/revoked)",
+        "  authority provenance = {} events (granted/used/denied)",
         provenance.len()
     );
     println!();
