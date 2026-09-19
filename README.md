@@ -277,11 +277,11 @@ Milestones below are ordered by dependency and gated by outcomes, not by schedul
 | ID | Decision |
 |---|---|
 | D-001 | Name is **Bivdi**; domain is **bivdi.com** |
-| D-002 | First-class driver target is the **most common VM engines** (KVM, VirtualBox, VMware, Firecracker, Proxmox, then AWS/GCP/Azure) |
+| D-002 | ~~First-class driver target is the **most common VM engines** (KVM, VirtualBox, VMware, Firecracker, Proxmox, then AWS/GCP/Azure)~~ → **Parked** alongside Core (P8) |
 | D-003 | **Bivdi Runtime is the product; Bivdi Core is a parked research track.** One IDL/API is retained so a future Core can run the same programs |
 | D-004 | **WASI components** as the native application format |
 | D-005 | **Rust** for services and drivers; language-neutral IDL for protocols |
-| D-006 | **IOMMU required**; hardware without IOMMU is unsupported |
+| D-006 | ~~**IOMMU required**; hardware without IOMMU is unsupported~~ → **Parked** alongside Core (P8) |
 | D-007 | Files survive as export format and contracts; **no persistence of running machine state** |
 | D-008 | Distribution is uniform, but network failure/latency is never hidden |
 | D-009 | GPU and Wi-Fi run in deprivileged **driver VMs** |
