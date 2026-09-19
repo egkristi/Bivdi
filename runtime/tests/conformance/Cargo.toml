@@ -1,0 +1,15 @@
+[package]
+name = "bivdi-conformance"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Conformance suite: the one-contract guarantee (RFC 0002 §8.5)"
+
+[dependencies]
+bivdi-cap = { path = "../../crates/bivdi-cap" }
+bivdi-agent = { path = "../../crates/bivdi-agent" }
+bivdi-object = { path = "../../crates/bivdi-object" }
+bivdi-state = { path = "../../crates/bivdi-state" }
+bivdi-runtime = { path = "../../crates/bivdi-runtime" }

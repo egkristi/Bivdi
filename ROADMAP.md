@@ -54,9 +54,9 @@ The gate has four clauses, mapped from the original Phase 0.
 | Deliverable | Status |
 |---|---|
 | WIT IDL | **Present** — `wit/core.wit` covers all six primitives; conforms to RFC 0002 §3.5 (no seL4 concept). |
-| Conformance suite | **Not started** — the IDL is defined; generated bindings and the suite are the next step. |
+| Conformance suite | **Done** — `tests/conformance` encodes the one-contract vectors (RFC 0002 §8.5). |
 | Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
-| Object store (durable) | In-memory only: blobs, CAS cells, catalogs. **No on-disk encoding, no snapshots, no encryption** |
+| Object store (durable) | **Done, deterministic CBOR** — blobs, CAS cells, catalogs, plus `save_cbor`/`load_cbor` (RFC 0002 §3.2); JSON `save`/`load` kept for compat |
 | Capability runtime | In-process: mint, attenuate, lease, revoke, provenance, queryable denials |
 | State engine | Desired state, reconciliation, immutable generations, rollback |
 | Event bus | In-memory: typed events, filters, correlation ids |
@@ -68,8 +68,8 @@ The gate has four clauses, mapped from the original Phase 0.
 
 **Remaining Milestone A work, in dependency order**
 
-1. Generate bindings from `wit/core.wit` and add a conformance suite (RFC 0002). The suite *is* the "one contract" guarantee; without it that guarantee is an intention.
-2. Persist the object store with a durable encoding.
+1. Generate bindings from `wit/core.wit` (`wit-bindgen`) and make the Rust crates implement the generated traits — the conformance suite is in place; generated bindings are the last piece of the "one contract" guarantee.
+2. ~~Persist the object store with a durable encoding~~ — **done** (deterministic CBOR, `save_cbor`/`load_cbor`).
 3. ~~Harden the runtime with seccomp and Landlock~~ — **done** (best-effort); remaining is verifying the sandbox on a host that permits Landlock, and hardening the container's own seccomp profile to *allow* Landlock rather than `EPERM` it.
 
 **Dependencies.** None (the IDL and conformance suite are already decided — `D-015`).

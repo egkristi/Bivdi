@@ -10,3 +10,5 @@ description = "Bivdi object store: content-addressed blobs, CAS cells, catalogs,
 blake3.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+# Deterministic CBOR for the durable object-store encoding (RFC 0002 §3.2).
+ciborium = "0.2"
