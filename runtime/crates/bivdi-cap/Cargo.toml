@@ -7,3 +7,4 @@ rust-version.workspace = true
 description = "Bivdi capability runtime: mint, attenuate, revoke, leases, provenance"
 
 [dependencies]
+serde = { workspace = true, features = ["derive"] }

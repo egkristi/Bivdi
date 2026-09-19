@@ -13,12 +13,13 @@
 //! opaque ids rather than enforced by a kernel. The durable-token tier is out
 //! of scope here (see `docs/token-format.md`).
 
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
 /// Rights over a resource. Ordering is by inclusion: `READ < WRITE < GRANT`.
 /// Rights can only ever be narrowed (attenuated), never widened.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Right {
     Read,
     Write,
