@@ -1,4 +1,4 @@
-//! Bivdi object store — Phase 0, in-memory.
+//! Bivdi object store — Phase 0.
 //!
 //! Implements the decided primitives from `docs/object-store-format.md`:
 //! - **Blob**: an immutable byte sequence named by its content hash.
@@ -10,8 +10,10 @@
 //!
 //! - The content hash is BLAKE3-256. It is the leading *proposal*, not a
 //!   decided item.
-//! - Storage is in-memory (Phase 0). There is no on-disk encoding yet.
+//! - The on-disk encoding (JSON, one file) is a *provisional* Phase 0 format,
+//!   not the decided on-disk layout — see `docs/object-store-format.md`.
 
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -77,7 +79,7 @@ impl Cell {
 
 /// A handle to a catalog (or object) within the store. In Phase 0 this is an
 /// opaque id. It is *not* a path and cannot be walked upward from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Handle(pub(crate) u64);
 
 /// A node in the object graph.
@@ -198,12 +200,79 @@ impl Store {
             _ => Err(ObjectError::NotACatalog),
         }
     }
+
+    /// Serialize the store to a JSON string (provisional Phase 0 format).
+    ///
+    /// # Provisional
+    ///
+    /// This JSON layout is a *provisional* on-disk encoding for Phase 0 — it is
+    /// NOT the decided on-disk format (which is open; see
+    /// `docs/object-store-format.md`). It exists so the runtime is a stateful,
+    /// running implementation across restarts.
+    pub fn save(&self) -> String {
+        let nodes = self.nodes.lock().unwrap();
+        let mut snap = Snapshot {
+            next_id: *self.next_id.lock().unwrap(),
+            blobs: BTreeMap::new(),
+            cells: BTreeMap::new(),
+            catalogs: BTreeMap::new(),
+        };
+        for (handle, node) in nodes.iter() {
+            match node {
+                Node::Blob(b) => {
+                    snap.blobs.insert(handle.0, b.data.clone());
+                }
+                Node::Cell(c) => {
+                    snap.cells.insert(handle.0, c.lock().unwrap().read());
+                }
+                Node::Catalog(c) => {
+                    snap.catalogs
+                        .insert(handle.0, c.lock().unwrap().entries.clone());
+                }
+            }
+        }
+        serde_json::to_string(&snap).expect("store snapshot serializes")
+    }
+
+    /// Load a store from the JSON produced by [`Store::save`].
+    pub fn load(json: &str) -> Result<Self, ObjectError> {
+        let snap: Snapshot =
+            serde_json::from_str(json).map_err(|_| ObjectError::CorruptSnapshot)?;
+        let mut nodes = BTreeMap::new();
+        for (id, data) in snap.blobs {
+            let hash = blake3_hash(&data);
+            nodes.insert(Handle(id), Node::Blob(Arc::new(Blob { hash, data })));
+        }
+        for (id, value) in snap.cells {
+            nodes.insert(Handle(id), Node::Cell(Arc::new(Mutex::new(Cell { value }))));
+        }
+        for (id, entries) in snap.catalogs {
+            nodes.insert(
+                Handle(id),
+                Node::Catalog(Arc::new(Mutex::new(CatalogInner { entries }))),
+            );
+        }
+        Ok(Self {
+            nodes: Mutex::new(nodes),
+            next_id: Mutex::new(snap.next_id),
+        })
+    }
+}
+
+/// The serializable snapshot of the store (provisional Phase 0 format).
+#[derive(Debug, Serialize, Deserialize)]
+struct Snapshot {
+    next_id: u64,
+    blobs: BTreeMap<u64, Vec<u8>>,
+    cells: BTreeMap<u64, Option<Hash>>,
+    catalogs: BTreeMap<u64, BTreeMap<String, Handle>>,
 }
 
 /// Object-store errors.
 #[derive(Debug)]
 pub enum ObjectError {
     NotACatalog,
+    CorruptSnapshot,
 }
 
 /// A failed CAS: the actual value observed.
@@ -274,5 +343,33 @@ mod tests {
             Err(ObjectError::NotACatalog)
         ));
         assert!(s.cell_read(blob).is_none());
+    }
+
+    #[test]
+    fn save_and_load_roundtrip_preserves_state() {
+        let s = Store::new();
+        let blob = s.put_blob(b"durable data".to_vec());
+        let cell = s.new_cell();
+        let h = blake3_hash(b"v1");
+        s.cell_cas(cell, None, Some(h)).unwrap();
+        let cat = s.new_catalog();
+        s.catalog_put(cat, "blob", blob).unwrap();
+        s.catalog_put(cat, "cell", cell).unwrap();
+
+        let json = s.save();
+        let loaded = Store::load(&json).unwrap();
+
+        assert_eq!(loaded.get_blob(blob).unwrap(), b"durable data");
+        assert_eq!(loaded.cell_read(cell).unwrap(), Some(h));
+        assert_eq!(loaded.catalog_get(cat, "blob"), Some(blob));
+        assert_eq!(loaded.catalog_get(cat, "cell"), Some(cell));
+    }
+
+    #[test]
+    fn load_rejects_corrupt_snapshot() {
+        assert!(matches!(
+            Store::load("not json"),
+            Err(ObjectError::CorruptSnapshot)
+        ));
     }
 }

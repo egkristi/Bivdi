@@ -13,6 +13,16 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 2 && args[1] == "persist" {
+        let path = args
+            .get(2)
+            .map(String::as_str)
+            .unwrap_or("bivdi-store.json");
+        demo_persistence(path);
+        return;
+    }
+
     println!("== Bivdi Runtime (six primitives) ==\n");
 
     demo_object_store();
@@ -23,6 +33,38 @@ fn main() {
     demo_identity();
 
     println!("\nBivdi — nothing has ambient authority. Everything must ask.");
+}
+
+/// Demonstrate that state survives a save/load round trip.
+fn demo_persistence(path: &str) {
+    println!("== Object store persistence (provisional Phase 0 format) ==\n");
+
+    // First "run": write state.
+    let store = Store::new();
+    let blob = store.put_blob(b"durable greeting".to_vec());
+    let cell = store.new_cell();
+    let h = blake3_hash(b"version-1");
+    store.cell_cas(cell, None, Some(h)).unwrap();
+    let cat = store.new_catalog();
+    store.catalog_put(cat, "greeting", blob).unwrap();
+
+    let json = store.save();
+    std::fs::write(path, &json).expect("write store file");
+    println!("  saved {} bytes to {path}", json.len());
+
+    // Second "run": load state from disk.
+    let loaded =
+        Store::load(&std::fs::read_to_string(path).expect("read store file")).expect("load store");
+    println!(
+        "  loaded blob   = {:?}",
+        String::from_utf8_lossy(&loaded.get_blob(blob).unwrap())
+    );
+    println!("  loaded cell   = {:?}", loaded.cell_read(cell).unwrap());
+    println!(
+        "  catalog[greeting] resolves = {}",
+        loaded.catalog_get(cat, "greeting").is_some()
+    );
+    println!();
 }
 
 fn demo_object_store() {

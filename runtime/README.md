@@ -12,7 +12,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 
 | Crate | What it implements |
 |---|---|
-| `bivdi-object` | The **object store**: content-addressed blobs, CAS cells, catalogs. |
+| `bivdi-object` | The **object store**: content-addressed blobs, CAS cells, catalogs, save/load. |
 | `bivdi-cap` | The **capability runtime**: mint, attenuate, revoke (subtree), leases, provenance. |
 | `bivdi-state` | The **state engine**: desired state, reconciliation, immutable generations. |
 | `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
@@ -35,8 +35,13 @@ cargo test --workspace
 ## Run the demo
 
 ```sh
-cargo run -p bivdi-cli
+cargo run -p bivdi-cli                    # full six-primitive demo
+cargo run -p bivdi-cli -- persist <path>  # object-store save/load round trip
 ```
+
+The `persist` subcommand demonstrates that the object store survives restarts: it
+writes blobs/cells/catalogs to a JSON file and loads them back. The on-disk
+encoding is a **provisional** Phase 0 format, not the decided on-disk layout.
 
 ---
 

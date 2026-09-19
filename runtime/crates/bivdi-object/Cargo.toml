@@ -8,3 +8,5 @@ description = "Bivdi object store: content-addressed blobs, CAS cells, catalogs,
 
 [dependencies]
 blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
