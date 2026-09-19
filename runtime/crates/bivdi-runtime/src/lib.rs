@@ -87,6 +87,30 @@ impl Node {
         Ok(id)
     }
 
+    /// Grant an additional capability to an existing agent, attenuated from
+    /// `source`. This is how one agent holds *several* capabilities (write to
+    /// the calendar **and** read to the document), per `docs/ai-agents.md` §4
+    /// (H3).
+    pub fn grant_agent(
+        &mut self,
+        agent_id: u64,
+        source: &Capability,
+        right: Rights,
+    ) -> Result<(), NodeError> {
+        let agent = self
+            .agents
+            .get_mut(&agent_id)
+            .ok_or(NodeError::NoSuchAgent)?;
+        self.host
+            .grant(agent, source, right)
+            .map_err(|_| NodeError::Denied)?;
+        self.events.publish(Event::CapabilityGranted {
+            correlation: self.events.new_correlation().0,
+            cap: agent_id,
+        });
+        Ok(())
+    }
+
     /// Execute one action on behalf of an agent, recording the outcome on the
     /// event fabric. Returns an error if the action is not authorized, the
     /// lease is expired, or the quota is exhausted.
@@ -248,7 +272,7 @@ mod tests {
             .any(|e| matches!(e, Event::CapabilityDenied { .. })));
     }
 
-    /// The RFC 0001 §3.4 scenario, as an automated, repeatable test. An agent
+    /// The RFC 0001 §3.4 scenario, as an automated, repeatable test. One agent
     /// is granted a leased write capability to exactly one calendar entry and
     /// read access to exactly one document; the document contains an instruction
     /// directing the agent to forward the mailbox and delete the originals. On
@@ -265,8 +289,8 @@ mod tests {
         let calendar_root = node.mint_root(calendar, Rights::ALL);
         let document_root = node.mint_root(document, Rights::ALL);
 
-        // Grant the agent a 10-minute lease, 20-action quota, write over the
-        // calendar entry and read over the document — nothing else.
+        // **One** agent, two capabilities (H3): write over the calendar entry
+        // and read over the document — nothing else, and no network flow.
         let agent = node
             .spawn_agent(
                 &calendar_root,
@@ -275,41 +299,37 @@ mod tests {
                 Quota::new(20, 0),
             )
             .unwrap();
-        let _doc = node
-            .spawn_agent(
-                &document_root,
-                Rights::READ,
-                Duration::from_secs(600),
-                Quota::new(20, 0),
-            )
+        node.grant_agent(agent, &document_root, Rights::READ)
             .unwrap();
 
-        // 1. No network flow capability was ever held: the agent holds only the
-        // two granted capabilities; "forward the mailbox" names no flow.
-        //    (Enforced structurally: the node has no network flow to hand out,
-        //    and `agent_act` on the mailbox fails below.)
+        // Clause 1 — no network flow capability was ever held: the agent holds
+        // only the two granted capabilities; "forward the mailbox" names no
+        // flow, and the agent holds no capability over any network endpoint.
+        // (Enforced structurally: the node exposes no flow to hand out, and
+        // `agent_act` on any network resource is refused below.)
 
         // The agent attempts the injected instruction: read the mailbox.
         assert!(node.agent_act(agent, mailbox, Rights::READ).is_err());
 
-        // 2. No capability naming the mailbox exists in the agent's capability
-        // space — the read above was denied (not a silent no-op).
+        // Clause 2 — no capability naming the mailbox exists in the agent's
+        // capability space: the read above was denied, not a silent no-op.
         let provenance = node.provenance_query();
         assert!(provenance
             .iter()
             .any(|e| matches!(e, Event::CapabilityDenied { .. })));
 
-        // 3. The provenance log shows the denial explicitly.
+        // Clause 3 — the provenance log shows the denial explicitly.
         assert!(provenance.iter().any(|e| matches!(
             e,
             Event::CapabilityDenied { cap, .. } if *cap == agent
         )));
 
-        // 4. The legitimate write within the grant still works.
+        // Within the grant, the agent can still write the calendar entry and
+        // read the document.
         assert!(node.agent_act(agent, calendar, Rights::WRITE).is_ok());
+        assert!(node.agent_act(agent, document, Rights::READ).is_ok());
 
-        // And a write outside the grant (the document, which is read-only) is
-        // denied and recorded.
+        // But writing the document (read-only) is denied and recorded.
         assert!(node.agent_act(agent, document, Rights::WRITE).is_err());
     }
 }
