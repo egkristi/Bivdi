@@ -3,3 +3,7 @@ temp/
 # Rust build artifacts
 runtime/target/
 **/target/
+
+# Crash dumps (from seccomp-filter testing)
+core
+core.*

@@ -47,7 +47,7 @@ The gate has four clauses, mapped from the original Phase 0.
 | *Write a program against the Bivdi API* | **Partly met** | A WIT IDL contract exists (`wit/core.wit`), but no generated bindings or SDK. Callers link Rust crates directly — a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
 | *Hand it an attenuated capability* | **Met, in-process** | `bivdi-cap` mints, attenuates, leases and revokes, with subtree revocation. It does not survive a process boundary, and unforgeability is simulated with opaque ids. |
 | *Query provenance for everything it wrote* | **Met, in-process** | `bivdi-cap` exposes `provenance_for_resource`/`provenance_for_capability`; the node exposes `provenance_query`; denials are recorded explicitly (`Denied` events). |
-| *With no code running outside a sandbox* | **Not met** | No seccomp filter and no Landlock policy anywhere in `runtime/`. |
+| *With no code running outside a sandbox* | **Met, best-effort** | A `bivdi-sandbox` crate applies a seccomp syscall allowlist and a read-only Landlock policy. It is best-effort: on a host that forbids the syscalls (old kernel, restrictive container profile), it reports *why* rather than overclaiming (RFC 0003). |
 
 ### Current state against the deliverables
 
@@ -63,14 +63,14 @@ The gate has four clauses, mapped from the original Phase 0.
 | Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
 | Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
 | Provenance query interface | **Done, in-process** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability` |
-| Hardening (seccomp + Landlock) | **Not started** |
+| Hardening (seccomp + Landlock) | **Done, best-effort** — `bivdi-sandbox` applies a seccomp allowlist + read-only Landlock policy; reports honestly when the host forbids it |
 | Developer SDK and CLI | CLI demo only. **No SDK** |
 
 **Remaining Milestone A work, in dependency order**
 
 1. Generate bindings from `wit/core.wit` and add a conformance suite (RFC 0002). The suite *is* the "one contract" guarantee; without it that guarantee is an intention.
 2. Persist the object store with a durable encoding.
-3. Harden the runtime with seccomp and Landlock — the fourth clause of the gate.
+3. ~~Harden the runtime with seccomp and Landlock~~ — **done** (best-effort); remaining is verifying the sandbox on a host that permits Landlock, and hardening the container's own seccomp profile to *allow* Landlock rather than `EPERM` it.
 
 **Dependencies.** None (the IDL and conformance suite are already decided — `D-015`).
 

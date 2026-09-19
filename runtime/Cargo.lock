@@ -99,6 +99,7 @@ dependencies = [
  "bivdi-identity",
  "bivdi-object",
  "bivdi-runtime",
+ "bivdi-sandbox",
  "bivdi-state",
  "bivdi-wasm",
  "serde_json",
@@ -147,6 +148,13 @@ dependencies = [
  "bivdi-identity",
  "bivdi-object",
  "bivdi-state",
+]
+
+[[package]]
+name = "bivdi-sandbox"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
