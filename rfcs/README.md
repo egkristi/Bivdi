@@ -9,6 +9,7 @@ Copy [`0000-template.md`](0000-template.md) to `NNNN-slug.md` to start one.
 | [0001](0001-target-niche.md) | First target niche: the headless agent and server host | Proposed | `P-002` |
 | [0002](0002-interface-definition-language.md) | Interface definition language and wire format | Proposed | IDL choice; unblocks `docs/abi.md` |
 | [0003](0003-platform-guarantees.md) | Platform guarantees matrix: reconciling `D-002` with `D-006` | Proposed | An unrecorded conflict between two decided items |
+| [0004](0004-kernel-choice.md) | Kernel choice: reuse seL4 | Proposed | `P-001` |
 
 ## Status values
 
