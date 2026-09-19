@@ -13,3 +13,8 @@ bivdi-agent = { path = "../../crates/bivdi-agent" }
 bivdi-object = { path = "../../crates/bivdi-object" }
 bivdi-state = { path = "../../crates/bivdi-state" }
 bivdi-runtime = { path = "../../crates/bivdi-runtime" }
+
+[dev-dependencies]
+# Validates `wit/core.wit` stays parseable — the "one contract" guarantee is
+# enforced, not asserted in prose.
+wit-parser = "0.236"

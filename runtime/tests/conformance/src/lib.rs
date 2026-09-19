@@ -186,4 +186,18 @@ mod conformance {
         assert!(node.agent_act(agent, mailbox, Rights::READ).is_err());
         assert!(node.agent_act(agent, calendar, Rights::WRITE).is_ok()); // within grant
     }
+
+    /// The WIT contract (`wit/core.wit`) is valid, parseable WIT. This is the
+    /// enforced form of the "one contract" guarantee: the IDL must stay a real
+    /// language-neutral contract, not a prose description that has drifted out
+    /// of sync with reality.
+    #[test]
+    fn wit_contract_is_valid() {
+        // CARGO_MANIFEST_DIR = runtime/tests/conformance; walk up to the repo
+        // root and into wit/.
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../wit/core.wit");
+        let mut resolve = wit_parser::Resolve::new();
+        let result = resolve.push_path(path);
+        assert!(result.is_ok(), "wit/core.wit must be valid WIT: {result:?}");
+    }
 }

@@ -115,6 +115,7 @@ dependencies = [
  "bivdi-object",
  "bivdi-runtime",
  "bivdi-state",
+ "wit-parser",
 ]
 
 [[package]]
