@@ -28,13 +28,38 @@ This is the single source of truth for what is and is not decided. It mirrors `R
 
 ## Proposed (not yet final)
 
-| ID | Proposal | Blocking question |
+| ID | Proposal | Blocking question | RFC |
+|---|---|---|---|
+| **P-001** | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) | Reuse a formally verified kernel vs. license (GPLv2) and control | — (resolve after `P-002`) |
+| **P-002** | First target market / niche | Headless agent/server host vs. high-security workstation vs. personal node | [`0001`](../rfcs/0001-target-niche.md) — proposed |
+| **P-003** | Component naming scheme | Evocative names vs. descriptive daemon-style names vs. deferred | — |
+| ~~P-004~~ | ~~License model~~ → **resolved** as D-012 (open core) | See `LICENSING.md` | — |
+| **P-005** | Governance structure and RFC process | Technical-lead + RFC now; elected committee + foundation post-1.0 | — |
+
+**`P-002` is resolved before `P-001`.** The niche determines what the kernel must support; choosing the kernel first means selecting a mechanism before the requirement is known.
+
+---
+
+## Open RFCs
+
+RFCs in flight. None is binding until accepted; an accepted RFC updates this file, `README.md` §16–17, and every affected document.
+
+| RFC | Subject | Resolves |
 |---|---|---|
-| **P-001** | **seL4** as the microkernel (alternative: original microkernel, seL4 methodology) | Reuse a formally verified kernel vs. license (GPLv2) and control |
-| **P-002** | First target market / niche | Headless agent/server host vs. high-security workstation vs. personal node |
-| **P-003** | Component naming scheme | Evocative names vs. descriptive daemon-style names vs. deferred |
-| ~~P-004~~ | ~~License model~~ → **resolved** as D-012 (open core) | See `LICENSING.md` |
-| **P-005** | Governance structure and RFC process | Technical-lead + RFC now; elected committee + foundation post-1.0 |
+| [`0001`](../rfcs/0001-target-niche.md) | First target niche: the headless agent and server host | `P-002` |
+| [`0002`](../rfcs/0002-interface-definition-language.md) | Interface definition language and wire format | IDL choice (`README.md` §17 item 1); unblocks `abi.md` |
+| [`0003`](../rfcs/0003-platform-guarantees.md) | Platform guarantees matrix | The unrecorded conflict between `D-002` and `D-006` |
+
+### Decisions still owed an RFC
+
+`CONTRIBUTING.md` §5 requires an RFC for every non-trivial design decision, *before* dependent work begins. These were taken without one and should be recorded retroactively:
+
+- `D-001` … `D-013` — the entire decided list predates any RFC. `D-013` was added most recently, still without one.
+- **BLAKE3** as the content-addressing hash — implemented, marked "provisional" only in a doc comment.
+- **`Right` as a three-value total order** — contradicts the six rights named in `ARCHITECTURE.md` §4.2, which do not form a chain. See `rfcs/0002` §5.
+- **Agent leases held separately from capability leases** — a real semantic choice, currently undocumented outside the code.
+- **Opaque in-process ids** as the stand-in for unforgeability on the Runtime track.
+- **The event-kind string taxonomy** in `bivdi-event`.
 
 ---
 
