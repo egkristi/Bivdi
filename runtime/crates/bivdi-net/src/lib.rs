@@ -15,7 +15,7 @@
 //! working TCP/IP stack. There is no actual socket I/O here; the point is to
 //! make the authority structure concrete.
 
-use bivdi_cap::{CapRuntime, Capability, Resource, Right};
+use bivdi_cap::{CapRuntime, Capability, Resource, Rights};
 
 /// An identity-based service name (e.g. `service://photos`).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -49,6 +49,8 @@ pub struct NetService {
     next_resource: u64,
     /// Registered service names → their capability resource.
     registry: std::collections::BTreeMap<ServiceName, Resource>,
+    /// The owner grant capability per registered resource.
+    roots: std::collections::BTreeMap<Resource, Capability>,
 }
 
 impl NetService {
@@ -61,18 +63,28 @@ impl NetService {
     pub fn register_service(&mut self, name: ServiceName) -> Capability {
         let resource = self.alloc_resource();
         self.registry.insert(name, resource);
-        self.runtime.mint(resource, Right::Grant)
+        let root = self.runtime.mint(resource, Rights::ALL);
+        self.roots.insert(resource, root);
+        root
     }
 
     /// Resolve an identity name to a flow capability — **DNS as a capability
     /// decision**. Returns a flow the caller may use, or `None` if the name is
     /// unknown (which is structurally indistinguishable from "no authority").
-    pub fn resolve(&self, name: &ServiceName) -> Option<Flow> {
-        // Phase 0 model: only registered services resolve. In a full system,
-        // resolution would be authenticated and return a verifier-checked flow.
-        let _resource = self.registry.get(name)?;
-        // A resolved name yields a read flow bound to the registered resource.
-        None
+    pub fn resolve(&mut self, name: &ServiceName) -> Option<Flow> {
+        let resource = *self.registry.get(name)?;
+        // Resolution yields a read flow bound to the registered resource. The
+        // flow is attenuated from the service's own grant capability, so the
+        // resolved name is authority, never a bare string.
+        let capability = self
+            .runtime
+            .attenuate(&self.root_for(resource)?, Rights::READ)
+            .ok()?;
+        Some(Flow {
+            capability,
+            endpoint: name.clone(),
+            anchors: TrustAnchors(vec![]),
+        })
     }
 
     /// Issue a flow capability for a registered service, attenuated to a
@@ -84,7 +96,7 @@ impl NetService {
         name: ServiceName,
         anchors: TrustAnchors,
     ) -> Option<Flow> {
-        let flow_cap = self.runtime.attenuate(service, Right::Read).ok()?;
+        let flow_cap = self.runtime.attenuate(service, Rights::READ).ok()?;
         Some(Flow {
             capability: flow_cap,
             endpoint: name,
@@ -94,7 +106,16 @@ impl NetService {
 
     /// Check whether a flow is currently usable (held, unexpired, grants Read).
     pub fn usable(&self, flow: &Flow, resource: Resource) -> bool {
-        self.runtime.check(&flow.capability, resource, Right::Read)
+        self.runtime.check(&flow.capability, resource, Rights::READ)
+    }
+
+    /// The capability this service holds over `resource`'s grant (the root
+    /// capability minted at registration), used to attenuate resolved flows.
+    fn root_for(&self, resource: Resource) -> Option<Capability> {
+        // Find the grant capability for the resource by re-minting is not
+        // possible (minting is owner-only); instead we track the root grant
+        // capability per registered resource.
+        self.roots.get(&resource).copied()
     }
 
     fn alloc_resource(&mut self) -> Resource {
@@ -126,11 +147,23 @@ mod tests {
 
     #[test]
     fn unresolved_name_is_structurally_no_authority() {
-        let net = NetService::new();
+        let mut net = NetService::new();
         // An unknown name resolves to nothing — there is no ambient network
         // namespace in which to bind.
         assert!(net
             .resolve(&ServiceName::new("service://nonexistent"))
             .is_none());
+    }
+
+    #[test]
+    fn resolved_name_yields_a_flow_capability() {
+        let mut net = NetService::new();
+        let _svc = net.register_service(ServiceName::new("service://photos"));
+        // A registered name resolves to a usable flow — DNS is a capability
+        // decision, not a bare lookup.
+        let flow = net
+            .resolve(&ServiceName::new("service://photos"))
+            .expect("registered name resolves");
+        assert_eq!(flow.endpoint, ServiceName::new("service://photos"));
     }
 }

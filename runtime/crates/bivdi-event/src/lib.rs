@@ -31,6 +31,7 @@ pub enum Event {
     CapabilityGranted { correlation: u64, cap: u64 },
     CapabilityUsed { correlation: u64, cap: u64 },
     CapabilityRevoked { correlation: u64, cap: u64 },
+    CapabilityDenied { correlation: u64, cap: u64 },
     DeviceAttached { correlation: u64, device: String },
     DeviceRemoved { correlation: u64, device: String },
     PolicyChanged { correlation: u64 },
@@ -51,6 +52,7 @@ impl Event {
             | Event::CapabilityGranted { correlation, .. }
             | Event::CapabilityUsed { correlation, .. }
             | Event::CapabilityRevoked { correlation, .. }
+            | Event::CapabilityDenied { correlation, .. }
             | Event::DeviceAttached { correlation, .. }
             | Event::DeviceRemoved { correlation, .. }
             | Event::PolicyChanged { correlation }
@@ -172,6 +174,7 @@ fn event_kind(event: &Event) -> &'static str {
         Event::CapabilityGranted { .. } => "capability_granted",
         Event::CapabilityUsed { .. } => "capability_used",
         Event::CapabilityRevoked { .. } => "capability_revoked",
+        Event::CapabilityDenied { .. } => "capability_denied",
         Event::DeviceAttached { .. } => "device_attached",
         Event::DeviceRemoved { .. } => "device_removed",
         Event::PolicyChanged { .. } => "policy_changed",

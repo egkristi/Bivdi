@@ -108,6 +108,8 @@ The IDL is the enforcement surface for two decided invariants, and choosing one 
 
 **This choice exposes an existing defect.** Writing the capability interface in WIT forces the `right` type to be declared, and `ARCHITECTURE.md` §4.2 names six rights — `read`, `write`, `execute`, `grant`, `signal`, `revoke` — which do not form a total order. The runtime currently implements `Right` as a three-value ordered enum with attenuation as `new <= held`. `execute` is not "less than" `write`, and a flag set is not a chain. **The IDL should declare `flags right { read, write, execute, grant, signal, revoke }` and attenuation should be subset inclusion.** This is a smaller change now than at any later point, and it is a prerequisite for writing the interface honestly.
 
+> **Implemented (2026-09-19).** This defect is now fixed in the Runtime: `bivdi-cap::Right` (the three-value ordered enum) was replaced by `bivdi-cap::Rights`, a six-flag set with subset-inclusion attenuation. `wit/core.wit` declares the matching `flags rights { read, write, execute, grant, signal, revoke }`. Escalation is now *denied* rather than clamped, which changes the observable behaviour of `spawn`/`delegate` to match the flag-set semantics.
+
 **Deterministic encoding is a security property, not an optimisation.** The provenance log is hash-chained and the object store is content-addressed. A non-deterministic encoding means the same logical value produces different hashes, which breaks deduplication and makes log verification unreliable. The CBOR profile must pin this, and the conformance suite must test it.
 
 No authority is widened by this RFC.

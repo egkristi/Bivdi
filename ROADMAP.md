@@ -44,33 +44,33 @@ The gate has four clauses, mapped from the original Phase 0.
 
 | Clause | Status | What is missing |
 |---|---|---|
-| *Write a program against the Bivdi API* | **Not met** | No IDL, no generated bindings, no SDK. Callers link Rust crates directly — a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
+| *Write a program against the Bivdi API* | **Partly met** | A WIT IDL contract exists (`wit/core.wit`), but no generated bindings or SDK. Callers link Rust crates directly — a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
 | *Hand it an attenuated capability* | **Met, in-process** | `bivdi-cap` mints, attenuates, leases and revokes, with subtree revocation. It does not survive a process boundary, and unforgeability is simulated with opaque ids. |
-| *Query provenance for everything it wrote* | **Partly met** | Authority-relevant events are recorded. There is no query interface — `provenance_len()` is a counter, not an answer. |
+| *Query provenance for everything it wrote* | **Met, in-process** | `bivdi-cap` exposes `provenance_for_resource`/`provenance_for_capability`; the node exposes `provenance_query`; denials are recorded explicitly (`Denied` events). |
 | *With no code running outside a sandbox* | **Not met** | No seccomp filter and no Landlock policy anywhere in `runtime/`. |
 
 ### Current state against the deliverables
 
 | Deliverable | Status |
 |---|---|
-| WIT IDL + conformance suite | **Not started** — the largest item in this milestone |
-| Rights lattice (flag set) | **Not started** — prerequisite for the IDL |
+| WIT IDL | **Present** — `wit/core.wit` covers all six primitives; conforms to RFC 0002 §3.5 (no seL4 concept). |
+| Conformance suite | **Not started** — the IDL is defined; generated bindings and the suite are the next step. |
+| Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
 | Object store (durable) | In-memory only: blobs, CAS cells, catalogs. **No on-disk encoding, no snapshots, no encryption** |
-| Capability runtime | In-process: mint, attenuate, lease, revoke, provenance |
+| Capability runtime | In-process: mint, attenuate, lease, revoke, provenance, queryable denials |
 | State engine | Desired state, reconciliation, immutable generations, rollback |
 | Event bus | In-memory: typed events, filters, correlation ids |
 | Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
 | Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
-| Provenance query interface | **Not started** |
+| Provenance query interface | **Done, in-process** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability` |
 | Hardening (seccomp + Landlock) | **Not started** |
 | Developer SDK and CLI | CLI demo only. **No SDK** |
 
 **Remaining Milestone A work, in dependency order**
 
-1. Fix the rights model — `flags` rather than an ordered enum (RFC 0002 §5). Cheapest now, prerequisite for the IDL.
-2. Define the WIT IDL and conformance suite (RFC 0002). The suite *is* the "one contract" guarantee; without it that guarantee is an intention.
-3. Persist the object store; give provenance a real query interface.
-4. Harden the runtime with seccomp and Landlock — the fourth clause of the gate.
+1. Generate bindings from `wit/core.wit` and add a conformance suite (RFC 0002). The suite *is* the "one contract" guarantee; without it that guarantee is an intention.
+2. Persist the object store with a durable encoding.
+3. Harden the runtime with seccomp and Landlock — the fourth clause of the gate.
 
 **Dependencies.** None (the IDL and conformance suite are already decided — `D-015`).
 
