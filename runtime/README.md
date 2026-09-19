@@ -19,6 +19,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 | `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
 | `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
 | `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
+| `bivdi-wasm` | The **WASI runtime**: executes WASI components as native applications. |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)
@@ -39,6 +40,7 @@ cargo test --workspace
 cargo run -p bivdi-cli                    # full six-primitive demo
 cargo run -p bivdi-cli -- persist <path>  # object-store save/load round trip
 cargo run -p bivdi-cli -- scenario        # RFC 0001 §3.4 agent exit-gate scenario
+cargo run -p bivdi-cli -- wasm            # compile + run a WASI module
 ```
 
 The `scenario` subcommand runs the Phase 1 agent-isolation exit gate end-to-end

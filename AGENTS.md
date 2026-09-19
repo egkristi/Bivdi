@@ -65,6 +65,8 @@ runtime/    Bivdi Runtime on Linux (Rust workspace — PRESENT)
   crates/bivdi-agent    agent host (constrained, quota-bound agents)
   crates/bivdi-event    event bus (typed, first-class events)
   crates/bivdi-identity identity service (kinds, petnames, disclosure)
+  crates/bivdi-runtime  runtime node (six primitives composed)
+  crates/bivdi-wasm     WASI runtime (D-004 native application format)
   crates/bivdi-cli      end-to-end demo CLI
 kernel/     the trusted core (microkernel) — not started; blocked on P-001
 services/   native service components — not started
@@ -95,7 +97,7 @@ cargo clippy --workspace --all-targets -- -D warnings  # lint (CI gate)
 cargo fmt --all --check     # format check (CI gate)
 ```
 
-- **Rust workspace** under `runtime/`, crates `bivdi-object`, `bivdi-cap`, `bivdi-state`, `bivdi-agent`, `bivdi-event`, `bivdi-identity`, `bivdi-cli`.
+- **Rust workspace** under `runtime/`, crates `bivdi-object`, `bivdi-cap`, `bivdi-state`, `bivdi-agent`, `bivdi-event`, `bivdi-identity`, `bivdi-runtime`, `bivdi-wasm`, `bivdi-cli`.
 - CI runs `fmt`, `build`, `clippy` (deny warnings), and `test` on every PR to `main`.
 - `target/` is git-ignored; never commit build artifacts.
 
