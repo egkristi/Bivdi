@@ -19,16 +19,19 @@
 
 use wasmtime::{Engine, Linker, Module, Store};
 use wasmtime_wasi::preview1::WasiP1Ctx;
-use wasmtime_wasi::WasiCtxBuilder;
+use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
 
 /// The capability context granted to a WASI program.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Capabilities {
     /// Grant access to stdout (inherited from the host). On by default.
     pub stdout: bool,
-    /// Grant filesystem access. **Off by default.**
+    /// Grant filesystem access (a single preopened, read-only directory).
+    /// **Off by default.**
     pub fs: bool,
-    /// Grant network access. **Off by default.**
+    /// Grant network access. **Off by default, and not supported** — WASI
+    /// Preview 1 in this host has no socket support, so requesting `net: true`
+    /// is refused at construction rather than silently inert (M2).
     pub net: bool,
 }
 
@@ -55,7 +58,18 @@ pub struct WasiRuntime {
 impl WasiRuntime {
     /// Compile a WASI module (`.wasm` bytes) into a runnable instance with the
     /// given capability context.
+    ///
+    /// Returns an error if `net: true` is requested (unsupported in this WASI
+    /// Preview 1 host), so an inert security control can never be mistaken for
+    /// an actual grant (M2).
     pub fn new(wasm: &[u8], caps: Capabilities) -> Result<Self, String> {
+        if caps.net {
+            return Err(
+                "network access is not supported by this WASI Preview 1 host; \
+                 `net: true` is refused rather than silently inert"
+                    .to_string(),
+            );
+        }
         let engine = Engine::default();
         // Validate that it compiles at all.
         Module::new(&engine, wasm).map_err(|e| e.to_string())?;
@@ -83,9 +97,16 @@ impl WasiRuntime {
         if self.caps.stdout {
             builder.inherit_stdout();
         }
-        // `fs` and `net` are not wired in Phase 0: granting them would require
-        // naming specific resources (the capability model's job). Absence of a
-        // grant is the default — this is ambient-authority-free by omission.
+        // `fs` grants a single preopened, read-only directory at "/" — the
+        // narrowest possible filesystem grant (M2). When `fs` is false there is
+        // no preopen, so the guest cannot reach the filesystem at all.
+        if self.caps.fs {
+            builder
+                .preopened_dir("/", "/", DirPerms::READ, FilePerms::READ)
+                .map_err(|e| e.to_string())?;
+        }
+        // `net` is refused at construction (see `new`), so there is nothing to
+        // wire here: the absence of a socket grant is the enforcement.
         let ctx = builder.build_p1();
         let mut linker: Linker<WasiP1Ctx> = Linker::new(&self.engine);
         wasmtime_wasi::preview1::add_to_linker_sync(&mut linker, |c| c)
@@ -167,6 +188,19 @@ mod tests {
     #[test]
     fn rejects_garbage() {
         let rt = WasiRuntime::new_least(b"not wasm");
+        assert!(rt.is_err());
+    }
+
+    #[test]
+    fn network_grant_is_refused_not_inert() {
+        // M2: `net: true` must fail at construction, so an inert security
+        // control can never be mistaken for an actual grant.
+        let caps = Capabilities {
+            stdout: true,
+            fs: false,
+            net: true,
+        };
+        let rt = WasiRuntime::new(&compile_wat(ADD_WAT), caps);
         assert!(rt.is_err());
     }
 

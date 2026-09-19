@@ -47,6 +47,10 @@ User / organization
 - **Irreversible actions require confirmation.** Sending, deleting, paying, and publishing can require explicit human approval, defined as policy.
 - **Full provenance.** Every write is traceable to the agent, the task, and the capability chain.
 
+### The enforcing layer
+
+The 2026-09-20 audit (C4) asked: *which layer actually stops the agent opening a socket?* The answer, now explicit: **the syscall layer.** The seccomp profile the agent runs under denies `socket`/`connect`/`execve`/`clone`, and the WASI host refuses `net: true` and preopens only a read-only directory for `fs`. The capability layer (`bivdi-net`) remains the *model* of network authority, and per-endpoint egress mediation against flow capabilities is future work — but until then, an agent cannot open a socket because the syscall that would open it is refused.
+
 ---
 
 ## 5. AI proposes, the OS enforces
