@@ -8,6 +8,7 @@ use bivdi_cap::{CapRuntime, Lease, Resource, Right};
 use bivdi_event::{Event, EventBus, Filter};
 use bivdi_identity::{Identity, IdentityService, Kind};
 use bivdi_object::{blake3_hash, Store};
+use bivdi_runtime::Node;
 use bivdi_state::{Action, DesiredState, StateEngine};
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -20,6 +21,10 @@ fn main() {
             .map(String::as_str)
             .unwrap_or("bivdi-store.json");
         demo_persistence(path);
+        return;
+    }
+    if args.len() >= 2 && args[1] == "scenario" {
+        run_agent_scenario();
         return;
     }
 
@@ -256,6 +261,57 @@ fn demo_event_bus() {
     );
     println!("  total history = {}", bus.history().len());
     println!("  correlation id = {}", corr.0);
+    println!();
+}
+
+/// The RFC 0001 §3.4 scenario, run through the composed runtime node.
+fn run_agent_scenario() {
+    println!("== Agent scenario (RFC 0001 §3.4) ==\n");
+
+    let mut node = Node::new(DesiredState {
+        workloads: BTreeMap::new(),
+    });
+
+    // A "calendar entry" resource the operator owns.
+    let calendar = Resource(42);
+    let root = node.mint_root(calendar, Right::Grant);
+
+    // Grant the agent a leased, write-scoped capability to exactly one entry.
+    let agent_id = node
+        .spawn_agent(
+            &root,
+            Right::Write,
+            Duration::from_millis(150),
+            Quota::new(20, 0),
+        )
+        .unwrap();
+    println!("  agent {agent_id} spawned with a 150ms leased Write capability");
+
+    // The agent can write (within its grant)…
+    println!(
+        "  allowed write = {}",
+        node.agent_act(agent_id, calendar, Right::Write).is_ok()
+    );
+
+    // …but a prompt-injection "forward the mailbox" is impossible: the agent
+    // holds no capability naming the mailbox, and no network flow capability.
+    let mailbox = Resource(7);
+    println!(
+        "  mailbox read denied = {}",
+        node.agent_act(agent_id, mailbox, Right::Read).is_err()
+    );
+
+    // After the lease expires, even the legitimate write is denied.
+    std::thread::sleep(Duration::from_millis(200));
+    println!(
+        "  write after lease expiry denied = {}",
+        node.agent_act(agent_id, calendar, Right::Write).is_err()
+    );
+
+    println!(
+        "  event-fabric history = {} events",
+        node.events.history().len()
+    );
     println!();
 }
 

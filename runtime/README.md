@@ -18,6 +18,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 | `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
 | `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
 | `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
+| `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)
@@ -37,11 +38,13 @@ cargo test --workspace
 ```sh
 cargo run -p bivdi-cli                    # full six-primitive demo
 cargo run -p bivdi-cli -- persist <path>  # object-store save/load round trip
+cargo run -p bivdi-cli -- scenario        # RFC 0001 §3.4 agent exit-gate scenario
 ```
 
-The `persist` subcommand demonstrates that the object store survives restarts: it
-writes blobs/cells/catalogs to a JSON file and loads them back. The on-disk
-encoding is a **provisional** Phase 0 format, not the decided on-disk layout.
+The `scenario` subcommand runs the Phase 1 agent-isolation exit gate end-to-end
+through the composed runtime node: an agent with a leased Write capability can
+write, a prompt-injection attempt to read an unrelated resource is denied, and
+after the lease expires even the legitimate write is denied.
 
 ---
 
