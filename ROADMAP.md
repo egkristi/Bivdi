@@ -186,7 +186,7 @@ These run across multiple phases and are not tied to a single milestone.
 | **Compatibility** | 2 → 4 | Linux ABI grows toward server software, then desktop; micro-VM as fallback; Windows via Wine. |
 | **Documentation & SDK** | 0 → 4 | The ABI needs excellent SDKs and docs to be adopted. |
 | **Governance** | 0 → 4 | Stage 1: technical lead + public RFC process. Stage 2 (post-1.0): elected technical steering committee; foundation holds trademark/domain. |
-| **Attribution & naming** | 0 → 1 | Sámi language review of the name; trademark registration; component naming decision. |
+| **Naming** | 0 → 1 | Component naming decision. |
 
 ---
 

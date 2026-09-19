@@ -31,18 +31,9 @@ Bivdi is explicitly **not** a Linux distribution, not a Kubernetes project, not 
 
 ---
 
-## 2. Name and attribution
+## 2. Name
 
 **Bivdi** is a North Sámi word derived from the verb *bivdit* ("to hunt, to fish; to ask for, to request"). The name fits the system: a hunter takes only what is needed, with the right tool — and in a capability system, everything must *ask*.
-
-Before any public launch, the project commits to:
-
-- Have the orthography, gloss, and pronunciation guidance reviewed by a competent Sámi language authority.
-- Credit the source; never present the name as invented or as generic "Nordic" branding.
-- Not claim Sámi representation or use Sámi visual identity in branding.
-- Rename if Sámi language authorities or community representatives object.
-
-> **Note:** *Bivdu* is the name of a Sea Sámi fishing-industry organization. The names differ, but the proximity should be known. A formal trademark search (Norwegian Patentstyret, EUIPO, USPTO, classes 9 and 42) is required before the name is registered.
 
 ---
 

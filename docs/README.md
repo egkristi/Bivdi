@@ -14,7 +14,7 @@ This directory holds the canonical technical documentation. Everything here is g
 | Document | Status | Content |
 |---|---|---|
 | [`threat-model.md`](threat-model.md) | ✅ Present | Adversaries, trusted computing base, mitigations, out-of-scope. |
-| [`attribution.md`](attribution.md) | ✅ Present | Sámi name meaning, pronunciation, and commitments. |
+| [`attribution.md`](attribution.md) | ✅ Present | The name, its meaning, and pronunciation. |
 | [`decisions.md`](decisions.md) | ✅ Present | Decision log (ADRs) for the decided items and the open proposals. |
 | [`glossary.md`](glossary.md) | ✅ Present | Terminology used across the project. |
 | [`spec.md`](spec.md) | 📄 Draft | Specification v0.1 — the decided model. Open: IDL, object-store mutation semantics, capability-runtime revocation. |
