@@ -66,7 +66,7 @@ The store offers transactions, snapshots, indexes, event streams, and replicatio
 
 ## 5. Open questions
 
-1. **On-disk encoding** — the copy-on-write layout, extent log, and epoch/root format. *(The Runtime currently uses deterministic CBOR — `bivdi-object::save_cbor`/`load_cbor` — as a provisional durable encoding per RFC 0002 §3.2; the copy-on-write on-disk layout is still open.)*
+1. **On-disk encoding** — the copy-on-write layout, extent log, and epoch/root format. *(The Runtime currently persists via deterministic CBOR — `bivdi-object::save_to_path`/`load_from_path` write to a temp file, `fsync`, then atomically rename — as a provisional durable encoding per RFC 0002 §3.2; the copy-on-write on-disk layout and a WAL/crash-recovery are still open.)*
 2. **Hash algorithm** — BLAKE3 proposed, not decided.
 3. **Encryption specifics** — cipher, key derivation, and per-object granularity.
 4. **Schema evolution** — how persistent objects migrate when their types change (`README.md` §17).

@@ -56,7 +56,7 @@ The gate has four clauses, mapped from the original Phase 0.
 | WIT IDL | **Present + valid + bindable** — `wit/core.wit` covers all six primitives, declares the host `world bivdi-core`, conforms to RFC 0002 §3.5 (no seL4 concept), and is validated by `wit_contract_is_valid` + `wit_rights_match_runtime_rights` in the conformance suite. |
 | Conformance suite | **Done** — `tests/conformance` encodes the one-contract vectors (RFC 0002 §8.5). |
 | Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
-| Object store (durable) | **Partial** — deterministic CBOR encoding exists (`save_cbor`/`load_cbor`), but nothing reaches disk (`M3`): no `std::fs`/`File` in the crate, no WAL, no crash recovery, no `fsync` semantics. It is a *persistent reference implementation of the object model*, not a durable object store. |
+| Object store (durable) | **Done (atomic, fsync)** — deterministic CBOR with `save_to_path`/`load_from_path`: writes to a temp file, `fsync`s, then atomically renames (`M3`). A WAL/crash-recovery and per-object encryption remain future. |
 | Capability runtime | In-process: mint, attenuate, lease, revoke, provenance, queryable denials |
 | State engine | Desired state, reconciliation, immutable generations, rollback |
 | Event bus | In-memory: typed events, filters, correlation ids |
