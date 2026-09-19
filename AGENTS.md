@@ -9,7 +9,7 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
 
-**Status:** Concept / planning, with the first code in place. The **Bivdi Runtime** under `runtime/` (Phase 0 object/capability/state model + Phase 1 agent host) is implemented and merged. The microkernel half of Phase 1 (VM bring-up, virtio, WASI) is blocked on the undecided kernel choice (`P-001`). Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
+**Status:** Phase 0 and the Runtime half of Phase 1 (object/capability/state/event/identity/agent + WASI runtime) are implemented and merged. The microkernel half of Phase 1 (VM bring-up, virtio drivers) is blocked on the undecided kernel choice (`P-001`). Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
 
 ## Source documents
 

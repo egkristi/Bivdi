@@ -7,7 +7,7 @@
 
 - **Project:** Bivdi
 - **Domain:** [bivdi.com](https://bivdi.com)
-- **Status:** Concept / planning. Phase 0: the Bivdi Runtime on Linux is in progress (see [`runtime/`](runtime/)).
+- **Status:** Phase 0 and the Runtime half of Phase 1 are implemented and runnable (see [`runtime/`](runtime/)). The microkernel half of Phase 1 is blocked on `P-001`.
 - **Document:** Project overview and decisions
 
 ---
