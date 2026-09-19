@@ -63,6 +63,7 @@ Ranked; when principles conflict, the higher one wins.
 11. **AI foreslår, OS håndhever.** AI proposes; the OS enforces. No agent gets more than it was delegated.
 12. **Portable, recoverable, observable by design.**
 13. **Performance is a first-class attribute.** Performance is designed in, measured, and regression-gated — but never won by weakening the security model.
+14. **Container-friendly, but containers are not a primitive.** The runtime runs in a container from the first executable, for deployment and compatibility. Containers are a compatibility view — they never become an architectural or security primitive.
 
 ---
 
@@ -298,6 +299,7 @@ Phases below synthesize the workgroup proposals. They are ordered by dependency 
 | D-010 | **Crypto-shredding** for deletion in versioned storage |
 | D-011 | **Performance is a first-class attribute** — designed in, measured, and gated; never won by weakening the security model |
 | D-012 | **Open-core licensing**: freely implementable spec; permissive SDKs (MIT OR Apache-2.0); MPL-2.0 for Bivdi's own core/services/drivers; proprietary commercial/enterprise layer; DCO (no CLA); interface exception. See [`LICENSING.md`](LICENSING.md). |
+| D-013 | **Container-friendly, not container-primitive**: the runtime runs in a container from the first executable; containers are a deployment/compatibility concern, never an architectural or security primitive. |
 
 ### Proposed (not yet final)
 

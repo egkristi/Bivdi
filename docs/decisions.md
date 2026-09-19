@@ -22,6 +22,7 @@ This is the single source of truth for what is and is not decided. It mirrors `R
 | **D-010** | **Crypto-shredding** for deletion in versioned storage | History is immutable, so deletion is key destruction; satisfies "right to be forgotten" without rewriting history. |
 | **D-011** | **Performance is a first-class attribute** | Performance is designed in, measured, and regression-gated; never won by weakening the security model. |
 | **D-012** | **Open-core licensing** | Freely implementable spec; permissive SDKs (MIT OR Apache-2.0); MPL-2.0 for Bivdi's own core/services/drivers; proprietary commercial/enterprise layer; DCO (no CLA); interface exception. See `LICENSING.md`. |
+| **D-013** | **Container-friendly, not container-primitive** | The runtime runs in a container from the first executable; containers are a deployment/compatibility concern, never an architectural or security primitive. |
 
 ---
 
