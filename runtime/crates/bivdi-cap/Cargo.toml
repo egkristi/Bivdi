@@ -8,3 +8,5 @@ description = "Bivdi capability runtime: mint, attenuate, revoke, leases, proven
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+blake3 = { workspace = true }

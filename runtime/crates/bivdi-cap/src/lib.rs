@@ -71,7 +71,7 @@ impl std::ops::BitAnd for Rights {
 
 /// A resource a capability points at. In Phase 0 a resource is a name-scoped
 /// opaque id; in Bivdi Core it is a kernel object reference.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Resource(pub u64);
 
 /// A capability: an unforgeable handle granting `right` over `resource`.
@@ -117,7 +117,7 @@ impl Lease {
 }
 
 /// A provenance event (authority-relevant only; never content).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Event {
     Minted {
         cap: u64,
@@ -162,20 +162,74 @@ impl Event {
     }
 }
 
+/// Hash one log entry: `BLAKE3(prev_hash || serialized_event)`. The event is
+/// serialized with a deterministic, self-describing format (serde_json with
+/// sorted keys would be ideal, but the `Event` struct's field order is fixed
+/// and stable, so `serde_json::to_vec` is deterministic here).
+fn hash_entry(prev: Hash, event: &Event) -> Hash {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&prev);
+    hasher.update(&serde_json::to_vec(event).expect("provenance event serializes"));
+    *hasher.finalize().as_bytes()
+}
+
 /// The capability runtime. Mints, attenuates, and revokes capabilities while
-/// recording an append-only provenance log.
+/// recording an append-only, hash-chained provenance log.
+///
+/// Each entry's hash commits to the previous entry's hash and to the entry's
+/// own content, so a tampered or reordered log breaks the chain (H4). The
+/// genesis hash is a fixed constant, not derived from a mutable state.
 #[derive(Debug, Default)]
 pub struct CapRuntime {
     next_id: u64,
     caps: BTreeMap<u64, (Capability, Option<Lease>)>,
     /// Parent link for subtree revocation.
     parent: BTreeMap<u64, u64>,
+    /// The append-only provenance log and its hash chain. `chain[i]` commits
+    /// to `chain[i-1]` and to `provenance[i]`.
     provenance: Vec<Event>,
+    chain: Vec<Hash>,
 }
+
+/// The chain hash type (BLAKE3-256, matching the object store's provisional
+/// content hash).
+pub type Hash = [u8; 32];
+
+/// The fixed genesis hash for an empty log. A constant, so an empty log has a
+/// well-defined, non-forgeable root.
+const GENESIS: Hash = [0x42; 32];
 
 impl CapRuntime {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Record an event and advance the hash chain. Returns the new head hash.
+    fn record(&mut self, event: Event) -> Hash {
+        let prev = self.chain.last().copied().unwrap_or(GENESIS);
+        let head = hash_entry(prev, &event);
+        self.provenance.push(event);
+        self.chain.push(head);
+        head
+    }
+
+    /// The head hash of the chain (the tamper-evident root of the log).
+    pub fn chain_head(&self) -> Hash {
+        self.chain.last().copied().unwrap_or(GENESIS)
+    }
+
+    /// Verify the chain is intact: recompute every hash from the genesis and
+    /// assert it matches the recorded chain. `true` iff no entry has been
+    /// altered, removed, or reordered.
+    pub fn verify_chain(&self) -> bool {
+        let mut prev = GENESIS;
+        for (event, recorded) in self.provenance.iter().zip(&self.chain) {
+            if hash_entry(prev, event) != *recorded {
+                return false;
+            }
+            prev = *recorded;
+        }
+        true
     }
 
     /// Mint a new root capability with the given rights over a resource.
@@ -192,7 +246,7 @@ impl CapRuntime {
                 None,
             ),
         );
-        self.provenance.push(Event::Minted {
+        self.record(Event::Minted {
             cap: id,
             resource,
             right,
@@ -235,7 +289,7 @@ impl CapRuntime {
         };
         self.caps.insert(id, (derived, lease));
         self.parent.insert(id, source.id);
-        self.provenance.push(Event::Attenuated {
+        self.record(Event::Attenuated {
             from: source.id,
             to: id,
             right,
@@ -271,7 +325,7 @@ impl CapRuntime {
         for id in &to_remove {
             self.caps.remove(id);
             self.parent.remove(id);
-            self.provenance.push(Event::Revoked { cap: *id });
+            self.record(Event::Revoked { cap: *id });
         }
     }
 
@@ -282,14 +336,14 @@ impl CapRuntime {
     /// must never vanish from the log (RFC 0001 §3.4 clause 3).
     pub fn record_use(&mut self, cap: &Capability, resource: Resource, right: Rights) -> bool {
         if self.check(cap, resource, right) {
-            self.provenance.push(Event::Acted {
+            self.record(Event::Acted {
                 cap: cap.id,
                 resource,
                 right,
             });
             true
         } else {
-            self.provenance.push(Event::Denied {
+            self.record(Event::Denied {
                 cap: cap.id,
                 resource,
                 right,
@@ -444,5 +498,24 @@ mod tests {
         assert!(for_one.iter().all(|e| e.resource() == Some(Resource(1))));
         assert_eq!(rt.provenance_for_resource(Resource(2)).len(), 2); // mint + act
         assert!(rt.provenance_for_resource(Resource(99)).is_empty());
+    }
+
+    #[test]
+    fn provenance_chain_verifies_and_detects_tampering() {
+        let mut rt = CapRuntime::new();
+        let root = rt.mint(Resource(1), Rights::READ);
+        rt.record_use(&root, Resource(1), Rights::READ);
+        assert!(rt.verify_chain(), "an untampered chain must verify");
+
+        // Tamper with a recorded entry: the chain must fail verification.
+        rt.chain[0] = [0xAA; 32];
+        assert!(!rt.verify_chain(), "a tampered chain must not verify");
+    }
+
+    #[test]
+    fn empty_log_verifies_against_genesis() {
+        let rt = CapRuntime::new();
+        assert_eq!(rt.chain_head(), GENESIS);
+        assert!(rt.verify_chain());
     }
 }
