@@ -16,6 +16,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 | `bivdi-cap` | The **capability runtime**: mint, attenuate, revoke (subtree), leases, provenance. |
 | `bivdi-state` | The **state engine**: desired state, reconciliation, immutable generations. |
 | `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
+| `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)

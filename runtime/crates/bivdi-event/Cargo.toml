@@ -1,0 +1,11 @@
+[package]
+name = "bivdi-event"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi event bus: typed, first-class events with correlation identity"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

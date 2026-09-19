@@ -1,22 +1,24 @@
-//! Bivdi Runtime CLI — Phase 0 + Phase 1 (agent host) demo.
+//! Bivdi Runtime CLI — Phase 0 + Phase 1 (agent host) + event bus demo.
 //!
-//! Ties the object store, capability runtime, state engine, and agent host
-//! together to demonstrate the decided model.
+//! Ties the object store, capability runtime, state engine, agent host, and
+//! event bus together to demonstrate the decided model.
 
 use bivdi_agent::{AgentHost, Quota};
 use bivdi_cap::{CapRuntime, Lease, Resource, Right};
+use bivdi_event::{Event, EventBus, Filter};
 use bivdi_object::{blake3_hash, Store};
 use bivdi_state::{Action, DesiredState, StateEngine};
 use std::collections::BTreeMap;
 use std::time::Duration;
 
 fn main() {
-    println!("== Bivdi Runtime (Phase 0 + Phase 1 agent host) ==\n");
+    println!("== Bivdi Runtime (Phase 0 + Phase 1 + event bus) ==\n");
 
     demo_object_store();
     demo_capabilities();
     demo_state_engine();
     demo_agent_host();
+    demo_event_bus();
 
     println!("\nBivdi — nothing has ambient authority. Everything must ask.");
 }
@@ -183,6 +185,33 @@ fn demo_agent_host() {
     );
 
     println!("  provenance events = {}", host.provenance_len());
+    println!();
+}
+
+fn demo_event_bus() {
+    println!("-- Event bus: typed events + correlation identity --");
+    let bus = EventBus::new();
+
+    // A subscriber interested only in generation activations.
+    let gen_sub = bus.subscribe(Filter::kind("generation_activated"));
+
+    // Events carry a correlation id tracing one action.
+    let corr = bus.new_correlation();
+    bus.publish(Event::GenerationActivated {
+        correlation: corr.0,
+        generation: 7,
+    });
+    bus.publish(Event::ObjectChanged {
+        correlation: corr.0,
+        object: "photo-1".into(),
+    });
+
+    println!(
+        "  generation subscriber received {} event(s)",
+        bus.drain(gen_sub).len()
+    );
+    println!("  total history = {}", bus.history().len());
+    println!("  correlation id = {}", corr.0);
     println!();
 }
 
