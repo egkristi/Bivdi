@@ -29,6 +29,10 @@ A–C in `ROADMAP.md`.
 | `bivdi-sandbox` | The **sandbox**: a seccomp syscall allowlist and a read-only Landlock policy (best-effort; reports honestly when the host forbids it). |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
+The **conformance suite** (`tests/conformance`) encodes the "one contract" guarantee from RFC 0002 §8.5: the same test vectors must pass against the Runtime today and any future Core later.
+
+The object store persists in two forms: provisional JSON (`save`/`load`) and **deterministic CBOR** (`save_cbor`/`load_cbor`, RFC 0002 §3.2).
+
 ## Provisional decisions (marked, not finalized)
 
 - **Hash:** BLAKE3-256 is used as the content-address default. It is the leading proposal, **not** a decided item — see `docs/object-store-format.md`.

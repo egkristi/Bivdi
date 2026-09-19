@@ -208,8 +208,46 @@ impl Store {
     /// This JSON layout is a *provisional* on-disk encoding for Phase 0 — it is
     /// NOT the decided on-disk format (which is open; see
     /// `docs/object-store-format.md`). It exists so the runtime is a stateful,
-    /// running implementation across restarts.
+    /// running implementation across restarts. Prefer [`Store::save_cbor`] for
+    /// the deterministic encoding the IDL decision (`D-015`, RFC 0002 §3.2)
+    /// requires.
     pub fn save(&self) -> String {
+        let snap = self.snapshot();
+        serde_json::to_string(&snap).expect("store snapshot serializes")
+    }
+
+    /// Load a store from the JSON produced by [`Store::save`].
+    pub fn load(json: &str) -> Result<Self, ObjectError> {
+        let snap: Snapshot =
+            serde_json::from_str(json).map_err(|_| ObjectError::CorruptSnapshot)?;
+        Ok(Self::from_snapshot(snap))
+    }
+
+    /// Serialize the store to deterministic CBOR bytes (RFC 0002 §3.2).
+    ///
+    /// Determinism is structural: the snapshot is built from `BTreeMap`s (so
+    /// keys are in canonical order) and every field is an integer or byte
+    /// string — no floats, no `usize`, no insertion-order-sensitive types.
+    /// The same logical store always produces the same bytes, which is what
+    /// content addressing and the hash-chained provenance log depend on.
+    pub fn save_cbor(&self) -> Vec<u8> {
+        let snap = self.snapshot();
+        let mut buf = Vec::new();
+        ciborium::into_writer(&snap, &mut buf).expect("store snapshot encodes as CBOR");
+        buf
+    }
+
+    /// Load a store from the deterministic CBOR produced by [`Store::save_cbor`].
+    pub fn load_cbor(bytes: &[u8]) -> Result<Self, ObjectError> {
+        let snap: Snapshot =
+            ciborium::from_reader(bytes).map_err(|_| ObjectError::CorruptSnapshot)?;
+        Ok(Self::from_snapshot(snap))
+    }
+
+    /// Build a serializable snapshot of the current store. Held under the same
+    /// lock discipline as `save`, so a snapshot is a consistent point-in-time
+    /// view of the whole graph.
+    fn snapshot(&self) -> Snapshot {
         let nodes = self.nodes.lock().unwrap();
         let mut snap = Snapshot {
             next_id: *self.next_id.lock().unwrap(),
@@ -231,13 +269,13 @@ impl Store {
                 }
             }
         }
-        serde_json::to_string(&snap).expect("store snapshot serializes")
+        snap
     }
 
-    /// Load a store from the JSON produced by [`Store::save`].
-    pub fn load(json: &str) -> Result<Self, ObjectError> {
-        let snap: Snapshot =
-            serde_json::from_str(json).map_err(|_| ObjectError::CorruptSnapshot)?;
+    /// Rebuild a store from a snapshot. Recomputed hashes are never trusted
+    /// from disk — they are derived from the bytes, so a tampered blob hash is
+    /// self-correcting (content addressing is enforced, not assumed).
+    fn from_snapshot(snap: Snapshot) -> Self {
         let mut nodes = BTreeMap::new();
         for (id, data) in snap.blobs {
             let hash = blake3_hash(&data);
@@ -252,10 +290,10 @@ impl Store {
                 Node::Catalog(Arc::new(Mutex::new(CatalogInner { entries }))),
             );
         }
-        Ok(Self {
+        Self {
             nodes: Mutex::new(nodes),
             next_id: Mutex::new(snap.next_id),
-        })
+        }
     }
 }
 
@@ -369,6 +407,50 @@ mod tests {
     fn load_rejects_corrupt_snapshot() {
         assert!(matches!(
             Store::load("not json"),
+            Err(ObjectError::CorruptSnapshot)
+        ));
+    }
+
+    #[test]
+    fn cbor_roundtrip_preserves_state() {
+        let s = Store::new();
+        let blob = s.put_blob(b"durable data".to_vec());
+        let cell = s.new_cell();
+        let h = blake3_hash(b"v1");
+        s.cell_cas(cell, None, Some(h)).unwrap();
+        let cat = s.new_catalog();
+        s.catalog_put(cat, "blob", blob).unwrap();
+        s.catalog_put(cat, "cell", cell).unwrap();
+
+        let bytes = s.save_cbor();
+        let loaded = Store::load_cbor(&bytes).unwrap();
+
+        assert_eq!(loaded.get_blob(blob).unwrap(), b"durable data");
+        assert_eq!(loaded.cell_read(cell).unwrap(), Some(h));
+        assert_eq!(loaded.catalog_get(cat, "blob"), Some(blob));
+        assert_eq!(loaded.catalog_get(cat, "cell"), Some(cell));
+    }
+
+    #[test]
+    fn cbor_encoding_is_deterministic() {
+        // The same logical store, built twice, must encode to identical bytes.
+        let build = || {
+            let s = Store::new();
+            let blob = s.put_blob(b"same data".to_vec());
+            let cell = s.new_cell();
+            s.cell_cas(cell, None, Some(blake3_hash(b"v1"))).unwrap();
+            let cat = s.new_catalog();
+            s.catalog_put(cat, "doc", blob).unwrap();
+            s.catalog_put(cat, "cell", cell).unwrap();
+            s.save_cbor()
+        };
+        assert_eq!(build(), build());
+    }
+
+    #[test]
+    fn cbor_rejects_corrupt_snapshot() {
+        assert!(matches!(
+            Store::load_cbor(&[0xff, 0x00, 0x01, 0x02]),
             Err(ObjectError::CorruptSnapshot)
         ));
     }
