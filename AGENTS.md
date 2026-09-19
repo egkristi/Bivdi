@@ -9,7 +9,7 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
 
-**Status:** Concept / planning. No code exists yet. Do not treat any architectural statement here as frozen except the items listed as *Decided* in the README (§16).
+**Status:** Concept / planning, with the first code in place. The **Bivdi Runtime** under `runtime/` (Phase 0 object/capability/state model + Phase 1 agent host) is implemented and merged. The microkernel half of Phase 1 (VM bring-up, virtio, WASI) is blocked on the undecided kernel choice (`P-001`). Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
 
 ## Source documents
 
@@ -37,7 +37,7 @@ Consult `README.md` §16. As of writing:
 
 **Component naming is deferred.** Use generic, descriptive terms in code and docs — "object store", "capability runtime", "state engine", "event bus", "identity service", "agent host" — not evocative codenames or daemon-style abbreviations, until a naming decision is recorded.
 
-## Conventions (apply once code exists)
+## Conventions
 
 - **Languages:** Rust for services, drivers, and the kernel; C/assembly only in the trusted core where required. Application-facing code targets WASI/WASM.
 - **Protocols:** define component interfaces in a language-neutral IDL; generate bindings rather than hand-writing ABI calls. The wire format is the contract, not a language calling convention.
@@ -46,26 +46,33 @@ Consult `README.md` §16. As of writing:
 - **Licensing (decided, open core):** spec freely implementable; SDKs/ABI headers MIT OR Apache-2.0; Bivdi's own core/services/drivers MPL-2.0; docs CC BY 4.0; commercial/enterprise layer proprietary. Third-party code keeps its own license. See [`LICENSING.md`](LICENSING.md).
 - **Linux driver reuse is driver-VM-only.** Linux kernel driver code is GPLv2-only and must **never** be copied into Bivdi's own (MPL-2.0) components. Reuse of Linux drivers happens only inside an isolated driver VM. Do not introduce dependencies or code whose license conflicts with this.
 - **AI-generated code policy.** All committed code is human-reviewed/edited before landing; provenance of authorship is documented; purely machine-generated code is not placed in the proprietary commercial layer.
+- **Provisional decisions in the runtime are marked, not silent.** In `runtime/`: content addressing uses BLAKE3-256 (proposed, not decided), and unforgeability is simulated with in-process opaque ids (a Phase 0 stand-in for kernel enforcement). Keep these marked as provisional; do not promote them to decided without an RFC.
 - **Attribution:** the Sámi name carries commitments (README §2). Never present the name as invented or as generic "Nordic" branding; preserve attribution text in docs.
 
 ## Repository layout
 
-Planned structure (from `README.md` §18); create directories as they become needed:
+Present structure; future directories are created as they become needed:
 
 ```text
-docs/       specs, threat model, ABI, attribution
-kernel/     the trusted core (microkernel)
-runtime/    Bivdi Runtime on Linux
-services/   object store, capability runtime, state engine, event bus,
-            identity, agent host, network, storage, provenance/audit,
-            packaging, compositor (later)
-drivers/    one directory per driver, one isolated component each
-lib/        capability-typed stdlib, syscall bindings, C ABI
-compat/     Linux ABI layer, micro-VM integration
-tools/      build, package, audit, image tooling
-tests/      property, fault-injection, conformance, fuzz
-rfcs/       all design decisions with rationale
+docs/       specs, threat model, ABI, attribution (present)
+.github/    CI workflows (docs.yml, rust.yml)
+rfcs/       RFC template (0000-template.md)
+runtime/    Bivdi Runtime on Linux (Rust workspace — PRESENT)
+  crates/bivdi-object   object store (content-addressed blobs, CAS cells, catalogs)
+  crates/bivdi-cap      capability runtime (mint/attenuate/revoke/leases/provenance)
+  crates/bivdi-state    state engine (desired state, generations, rollback)
+  crates/bivdi-agent    agent host (constrained, quota-bound agents)
+  crates/bivdi-cli      end-to-end demo CLI
+kernel/     the trusted core (microkernel) — not started; blocked on P-001
+services/   native service components — not started
+lib/        capability-typed stdlib, syscall bindings, C ABI — not started
+compat/     Linux ABI layer, micro-VM integration — not started
+drivers/    one directory per driver, one isolated component each — not started
+tools/      build, package, audit, image tooling — not started
+tests/      property, fault-injection, conformance, fuzz — not started
 ```
+
+The top-level `services/`, `drivers/`, and `lib/` directories in `README.md` §18 are the *planned* homes for Bivdi Core components. The Linux Runtime lives entirely under `runtime/`; do not create top-level `services/` etc. for Runtime code.
 
 ## Process
 
@@ -109,7 +116,7 @@ Bivdi follows a GitHub issue-driven workflow. Every change traces back to an iss
 
 - **Conventional Commits.** Write messages as `type(scope): summary`, where `type` is one of `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, and `scope` is optional. Reference the issue in the message, e.g. `docs(workflow): enforce CI-gated merges (#5)`.
 - **Commit after major changes**, completed features, or new versions/releases — not arbitrary intervals.
-- **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` is excluded).
+- **Don't commit** throwaway or generated artifacts; keep `.gitignore` accurate (currently `temp/` and `runtime/target/` are excluded).
 
 ### Merge requests (MRs/PRs)
 
@@ -118,8 +125,7 @@ Bivdi follows a GitHub issue-driven workflow. Every change traces back to an iss
 - **Describe the change** and how it meets the issue's acceptance criteria.
 - **Merge is blocked until CI passes.** All required status checks must be green before merge. Never merge a red or pending build.
 
-### CI/CD gate (applies once a pipeline exists)
+### CI/CD gate
 
-- **Required checks must pass.** The repository's CI (lint, build, test, and any security-relevant gates) must complete successfully before a merge is possible. This is enforced by branch protection on `main`.
+- **Required checks must pass.** Two workflows gate every PR to `main`: `docs.yml` (validate required files + internal Markdown links) and `rust.yml` (fmt, build, clippy `-D warnings`, test). This is enforced by branch protection on `main` (1 required review + enforce-admins).
 - **Don't bypass the gate.** If a check is flaky or misconfigured, fix the pipeline or file an issue — do not force-merge around it.
-- **No build system exists yet.** When the first code lands, establish the canonical commands for build, test, lint, and fuzz, wire them into CI, and document the required checks here.
