@@ -113,7 +113,7 @@ The Runtime runs on the Linux kernel today, hardened with seccomp/Landlock. The 
 
 Everything else — drivers, storage, networking, the window system — runs unprivileged in user space.
 
-**Status:** kernel choice is *deferred indefinitely* (`P-001`). The leading proposal remains **seL4**, a formally verified capability microkernel (functional-correctness proofs down to machine code on supported architectures, plus integrity/confidentiality results). See [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md) for the recorded analysis. Until it is decided, the IDL forbids seL4 concepts (`D-015`), keeping the Core option open without letting the kernel's vocabulary leak into Bivdi's contracts.
+**Status:** kernel choice is *deferred indefinitely* (`P-001`). The leading proposal remains **seL4**, a formally verified capability microkernel (functional-correctness proofs; on AArch64 also integrity and confidentiality, with binary-level verification only on AArch32 — see [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md)). Until it is decided, the IDL forbids seL4 concepts (`D-015`), keeping the Core option open without letting the kernel's vocabulary leak into Bivdi's contracts.
 
 ---
 
@@ -134,8 +134,8 @@ Everything else — drivers, storage, networking, the window system — runs unp
 
 - **Typed object store.** Data lives in a typed, schema-validated, content-addressed graph with metadata, relationships, and version history. The hierarchical filesystem remains as *one* view of the graph.
 - **Deep immutability.** Writes are append-only; mutation creates a new revision pointing to immutable parents. Rollback to any prior state is a pointer change.
-- **Transactional, crash-consistent.** All changes are transactions; there is no partially-written state and no `fsck`.
-- **Crypto-shredding for deletion.** Because history is immutable, deletion is implemented by destroying the per-object encryption key, satisfying "right to be forgotten" without rewriting history.
+- **Transactional, crash-consistent.** The object model is designed so that ordinary crash recovery does not require filesystem-style repair; all changes are transactions in the model. *(The Runtime's current persistence is a whole-graph serialiser, not yet a crash-consistent store — see `ROADMAP.md`.)*
+- **Crypto-shredding for deletion.** Because history is immutable, deletion is implemented by destroying the per-object encryption key — Bivdi-managed encrypted replicas can be rendered unreadable through key destruction. *(A mechanism, not a claim to satisfy any legal standard; not yet implemented in the Runtime.)*
 - **No continuous machine-state persistence.** Bivdi persists *data and configuration*, not running instruction-level machine state. A reboot yields clean execution state over consistent data. Services may take periodic checkpoints.
 - **Bounded scope.** The object store offers transactions, snapshots, indexes, event streams, and replication. It does *not* replace PostgreSQL, Kafka, or large-scale object storage — databases remain applications using OS primitives.
 - **Flies survive as contracts.** Bivdi does not kill the file. Objects have a canonical serialized form and can always be exported/imported as files; legacy programs see objects as files via a virtual filesystem view.
@@ -308,7 +308,7 @@ Milestones below are ordered by dependency and gated by outcomes, not by schedul
 
 Recorded honestly — these are not solved in the design and are inputs to spec v0.1:
 
-1. **Revocation.** How to revoke access to shared memory and to data already copied out of a component?
+1. **Revocation.** Authority revocation is implemented (subtree-wide); *information* revocation — data already copied out of a component — is impossible in general. The distinction is stated in `docs/capabilities.md` §7; shared-memory revocation remains open.
 2. **Schema evolution.** How to migrate persistent objects safely when their types change?
 3. **Efficient sharing of large data.** How far does ownership transfer cover GPU/ML/video workloads without shared mutable memory?
 4. **Cannibalization.** How to ensure a native ecosystem grows when compatibility layers are good?
@@ -354,7 +354,7 @@ The Runtime lives entirely under `runtime/`. The `kernel/`, `drivers/`, `lib/`, 
 - **Documentation:** CC BY 4.0.
 - **Commercial/enterprise layer:** proprietary, sold separately.
 
-> seL4 (GPLv2-only) is never part of Bivdi's licensed core and is never resold; it is used as a separate component behind published interfaces.
+> seL4 (GPLv2-only) is never part of Bivdi's licensed core and its source is never conveyed as part of Bivdi's MPL-2.0 code; it is used as a separate component behind published interfaces. (GPLv2 permits sale; the constraint Bivdi respects is source conveyance, not resale.)
 
 ---
 

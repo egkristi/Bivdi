@@ -35,6 +35,8 @@ The TCB is the minimum set whose failure breaks the security model. Under the de
 4. the root supervisor;
 5. the root authority holding the seal/recovery key.
 
+**On a virtualized platform, the host hypervisor joins the TCB** — a VM guest's isolation and its DMA boundary are ultimately enforced by the hypervisor, not by the guest. This is not yet stated in the platform-guarantees matrix, which is currently deferred (RFC 0003). Any platform claim must name this sixth member or be incomplete.
+
 **Everything else is outside the TCB** — the object store, every driver, the network stack, the compositor, and every application. A defect in any of them is a bug, not a breach of the model.
 
 > The exact TCB list is subject to the kernel decision (`P-001`). This list is the invariant to preserve under any kernel choice.
@@ -50,7 +52,7 @@ The TCB is the minimum set whose failure breaks the security model. Under the de
 | **Compromised driver** | Arbitrary code in a userspace driver with device access | Confined to its IOMMU domain and capability set; cannot touch kernel memory or other drivers; restartable |
 | **Malicious peripheral (DMA)** | Bus-master DMA, malicious USB/Thunderbolt | IOMMU with per-buffer pages and strict invalidation; no driver gets an identity-mapped window |
 | **Network attacker** | Full control of the path, MITM | Encryption and mutual authentication by default; flow capabilities, not raw sockets |
-| **Prompt-injection / compromised agent** | An agent tricked into misusing its delegated authority | Narrow, attenuated, time-limited, quota-bound capabilities; content is data, not instructions; full provenance |
+| **Prompt-injection / compromised agent** | An agent tricked into misusing its delegated authority | Narrow, attenuated, time-limited, quota-bound capabilities; content cannot modify authority; full provenance |
 | **Supply-chain attack** | A backdoored package or update | Content-addressed, reproducible builds; authority-widening changes surface as a readable diff |
 | **Local privilege-escalation seeker** | Syscall fuzzing, race exploitation | Small capability-based syscall surface; no name-based access, so no TOCTOU-on-name class |
 | **Offline disk attacker** | Physical possession of powered-off storage | Per-object encryption sealed to the boot measurement |

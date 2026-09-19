@@ -2,6 +2,8 @@
 
 **Status:** Draft, grounded in the decided model. Provenance is a load-bearing commitment. The concrete log encoding is **open**; the *model* below is decided.
 
+> **Implementation gap (2026-09-20 audit, H4).** The Runtime's provenance is currently an in-memory `Vec<Event>` with a push: no hash chaining, no Merkle tree, no signature, no durability. The integrity properties in §4 describe the *decided model*, not what the Runtime implements today. Closing this gap is sequenced in `ROADMAP.md` (Milestone A remaining work, item 6): append-only and hash-chained first, then durability, then signed checkpoints and replication.
+
 ---
 
 ## 1. Decided principle

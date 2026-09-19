@@ -140,10 +140,10 @@ The object store replaces the filesystem as the conceptual center. It is an unpr
 
 - **Content addressing.** Blobs are named by hash; deduplication is automatic at the block level.
 - **Deep immutability.** Writes are append-only; mutation creates a new node pointing at immutable parents. Rollback is a pointer change.
-- **Transactions.** All changes commit atomically; there is no partially-written state and no `fsck`.
+- **Transactions.** The model is designed so that ordinary crash recovery does not require filesystem-style repair — a design property, not a tested guarantee. *(The Runtime's persistence is a whole-graph serialiser, not a transactional store.)*
 - **Snapshots.** A snapshot is a retained root — O(1) to take, free to hold.
 - **Per-object encryption.** Each object (or group) is encrypted with its own key, sealed to the boot measurement. Objects can replicate to untrusted storage while leaking only their length.
-- **Crypto-shredding.** Because history is immutable, deletion destroys the key, satisfying "right to be forgotten" without rewriting history.
+- **Crypto-shredding.** Because history is immutable, deletion destroys the key — Bivdi-managed encrypted replicas can be rendered unreadable through key destruction. *(A mechanism, not a claim to satisfy a legal standard.)*
 
 ### 5.3 Bounded scope
 
@@ -281,7 +281,7 @@ The TCB is the minimum set whose failure breaks the security model:
 
 The kernel does only what requires the highest privilege: scheduling, virtual address spaces, IPC, capability enforcement, interrupt delivery, and virtualization support. It contains **no** device drivers, **no** filesystem, **no** network stack, and it **never parses a string**. Physical memory is distributed as untyped memory at boot; after boot the kernel allocates nothing, which removes an entire class of exhaustion and use-after-free defects.
 
-**Status:** kernel choice is **deferred indefinitely** (`P-001`); **seL4** remains the leading proposal (formally verified for functional correctness down to machine code on supported architectures, plus integrity/confidentiality results). The alternative is a small original microkernel written following the seL4 methodology. See [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md). The Runtime runs on the Linux kernel today, hardened with seccomp/Landlock.
+**Status:** kernel choice is **deferred indefinitely** (`P-001`); **seL4** remains the leading proposal (formally verified for functional correctness; integrity and confidentiality proofs are strongest on AArch64, and binary-level verification exists only for AArch32). The alternative is a small original microkernel written following the seL4 methodology. See [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md). The Runtime runs on the Linux kernel today, hardened with seccomp/Landlock.
 
 ### 14.3 Hardware security
 

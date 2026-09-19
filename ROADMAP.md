@@ -47,7 +47,7 @@ The gate has four clauses, mapped from the original Phase 0.
 | *Write a program against the Bivdi API* | **Partly met** | A WIT IDL contract exists (`wit/core.wit`) and is now **valid, parseable WIT, enforced by a test** (`wit_contract_is_valid`). But there are no generated bindings or SDK — callers link Rust crates directly, a language calling convention, not the contract `D-005` requires. See [`rfcs/0002-interface-definition-language.md`](rfcs/0002-interface-definition-language.md). |
 | *Hand it an attenuated capability* | **Met, in-process** | `bivdi-cap` mints, attenuates, leases and revokes, with subtree revocation. It does not survive a process boundary, and unforgeability is simulated with opaque ids. |
 | *Query provenance for everything it wrote* | **Met, in-process** | `bivdi-cap` exposes `provenance_for_resource`/`provenance_for_capability`; the node exposes `provenance_query`; denials are recorded explicitly (`Denied` events). |
-| *With no code running outside a sandbox* | **Met, best-effort** | A `bivdi-sandbox` crate applies a seccomp syscall allowlist and a read-only Landlock policy. It is best-effort: on a host that forbids the syscalls (old kernel, restrictive container profile), it reports *why* rather than overclaiming (RFC 0003). |
+| *With no code running outside a sandbox* | **Not met** | A `bivdi-sandbox` crate exists and its seccomp kill-path works, but the audit (2026-09-20, C1/C2/H1/H2) verified that the allowlist permits outbound network, arbitrary reads, and `execve`; the filter lacks an architecture check; it applies to one thread; and Landlock silently fails in a container while execution proceeds. The sandbox does not yet enforce what this clause requires. |
 
 ### Current state against the deliverables
 
@@ -56,21 +56,30 @@ The gate has four clauses, mapped from the original Phase 0.
 | WIT IDL | **Present + valid + bindable** — `wit/core.wit` covers all six primitives, declares the host `world bivdi-core`, conforms to RFC 0002 §3.5 (no seL4 concept), and is validated by `wit_contract_is_valid` + `wit_rights_match_runtime_rights` in the conformance suite. |
 | Conformance suite | **Done** — `tests/conformance` encodes the one-contract vectors (RFC 0002 §8.5). |
 | Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
-| Object store (durable) | **Done, deterministic CBOR** — blobs, CAS cells, catalogs, plus `save_cbor`/`load_cbor` (RFC 0002 §3.2); JSON `save`/`load` kept for compat |
+| Object store (durable) | **Partial** — deterministic CBOR encoding exists (`save_cbor`/`load_cbor`), but nothing reaches disk (`M3`): no `std::fs`/`File` in the crate, no WAL, no crash recovery, no `fsync` semantics. It is a *persistent reference implementation of the object model*, not a durable object store. |
 | Capability runtime | In-process: mint, attenuate, lease, revoke, provenance, queryable denials |
 | State engine | Desired state, reconciliation, immutable generations, rollback |
 | Event bus | In-memory: typed events, filters, correlation ids |
 | Identity service | In-memory: kinds, fingerprints, petnames, attribute predicates |
 | Agent host | Capability-constrained, leased, quota-bound agents; plan execution |
-| Provenance query interface | **Done, in-process** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability` |
-| Hardening (seccomp + Landlock) | **Done, best-effort** — `bivdi-sandbox` applies a seccomp allowlist + read-only Landlock policy; reports honestly when the host forbids it |
+| Provenance query interface | **Done, in-process** — `provenance_query`, `provenance_for_resource`, `provenance_for_capability`; but the log has none of the integrity properties `docs/provenance.md` §4 specifies (no hash chaining, Merkle tree, or signature — `H4`). |
+| Hardening (seccomp + Landlock) | **Incomplete** — the seccomp kill-path works, but the allowlist is too wide (`C1`), lacks an arch check (`C2`), applies to one thread (`H2`), and Landlock failure is a printed line, not a policy (`H1`). |
 | Developer SDK and CLI | CLI demo only. **No SDK** |
 
 **Remaining Milestone A work, in dependency order**
 
-1. Wire generated bindings into the crates (`wit-bindgen`/`wasmtime::bindgen!`) and make the crates implement the generated traits — the WIT is now a *declared world* (`world bivdi-core`), so bindings are generatable, and the contract↔implementation correspondence is already cross-checked by `wit_rights_match_runtime_rights`. This is the last piece of the "one contract" guarantee.
-2. ~~Persist the object store with a durable encoding~~ — **done** (deterministic CBOR, `save_cbor`/`load_cbor`).
-3. ~~Harden the runtime with seccomp and Landlock~~ — **done** (best-effort); remaining is verifying the sandbox on a host that permits Landlock, and hardening the container's own seccomp profile to *allow* Landlock rather than `EPERM` it.
+*(Revised 2026-09-20 after the code/security audit — `temp/audit-2026-09-20.md`.)*
+
+1. **Write the sandbox escape test** — fork a child, engage the sandbox, assert network/arbitrary-reads/exec are refused. It fails today; its absence is why `C1`/`C2` shipped.
+2. **Decide which layer enforces agent confinement and implement it there** (`C4`) — seccomp, the WASI host, and `bivdi-net` currently each defer to another; name the enforcing layer in `docs/ai-agents.md`.
+3. **Add the arch check + `TSYNC`** to the seccomp filter (`C2`, `H2`), and cut the allowlist to what the host needs (drop network/`execve`/`clone` from the agent profile).
+4. **Fix `NetService::resolve`** (`C3`) — resolution must require a namespace capability and attenuate from what the caller holds; reverse the test that certifies the bug.
+5. **Make degraded hardening a policy decision** (`H1`) — `engage()` needs a strict mode that refuses to run untrusted code when `is_hardened()` is false.
+6. **Give the provenance log hash-chaining and durability** (`H4`).
+7. **Give `Agent` a capability set** (`H3`) and rewrite the §3.4 scenario as one agent holding two capabilities, with clauses 1 and 4 asserted not commented (`M4`).
+8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee).
+9. **Clear the overclaiming language in one pass** (`P3`/`P4`, `M2`/`M3`/`M7`/`M8`).
+10. **Make the other three CI jobs required** (`P2`) and resolve RFC 0003's deferral (`P8`).
 
 **Dependencies.** None (the IDL and conformance suite are already decided — `D-015`).
 
@@ -157,7 +166,8 @@ These run across multiple milestones and are not tied to a single gate.
 | **Scope explosion** | High | Runtime-first sequencing; the kernel is parked; explicit non-goals |
 | **Prompt injection / compromised agent** | High | The Milestone B scenario makes the mitigation testable, not asserted |
 | **Powerbox usability** | High | Deferred — the agent host is headless and operator-facing; a negative result on the desktop track changes the design, not the narrative |
-| **Overclaiming assurance** | High | "Verification-oriented" until proven; published audits including unfixed findings |
+| **Overclaiming assurance** | High | "Verification-oriented" until proven; published audits including unfixed findings. The 2026-09-20 audit (`temp/audit-2026-09-20.md`) is the first such audit and its unfixed findings are tracked in the Milestone A list above. |
+| **Recurring authority-defect pattern** — a function mints/attenuates authority for a caller holding nothing | High | Four instances found across two reviews (`AgentHost::spawn`, `grant_identity_capability`, `NetService::resolve`, `grant_flow`). Mitigation: make `CapRuntime::mint` require an explicit owner token so the class is closed, not re-fixed per instance. |
 | **seL4 licensing interaction** (seL4 is GPLv2-only) | Medium | Relevant only if Core is reactivated; open core (D-012) already isolates seL4 behind published interfaces |
 
 ---

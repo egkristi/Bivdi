@@ -39,7 +39,10 @@ Writing an original microkernel with seL4 methodology is the stated alternative.
 | virtio drivers in userspace | Yes — drivers are userspace components by design |
 | WASI runtime in userspace | Yes — any userspace service |
 | No display server, no USB, no power mgmt | Irrelevant — seL4 does none of these in the kernel |
-| Capability scheduling, IOMMU handling | Native (MCS scheduling; hardware capability derivation) |
+| Capability scheduling | Native (MCS scheduling) |
+| IOMMU handling | Present, but **not covered by seL4's verification** — see the verification caveat below |
+
+> **Verification caveat (2026-09-20 audit, P4).** seL4's published verified-configurations table lists *device address translation (System MMU / IOMMU)* as **unverified in every configuration**, alongside kernel startup. Verification also differs sharply by architecture: X64 has functional correctness only (no integrity or confidentiality proof), AArch64 has all three, and binary-level verification exists only for AArch32. So the driver-isolation story — which `D-006` makes IOMMU-load-bearing — is, on the stated first-target platforms, neither fully proof-covered nor (per RFC 0003) always hardware-enforced. This does not change the recommendation (seL4 is still the strongest available base), but it corrects the impression that its proofs cover the IOMMU path.
 
 The niche removes every feature that historically pushes a project to write its own kernel: graphics, USB, suspend, and power management are all deferred (`ROADMAP.md` Phase 4 or not at all).
 

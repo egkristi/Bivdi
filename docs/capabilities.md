@@ -51,7 +51,16 @@ Permissions are leases, not permanent flags: "microphone for 5 minutes", "until 
 
 ---
 
-## 7. Open questions
+## 7. Revocation: authority vs. information
+
+Two different things travel under the word *revoke*, and the distinction matters for the agent-execution host:
+
+- **Authority revocation** — the holder can no longer *reach* the source again. Bivdi implements this, subtree-wide, and it is genuinely useful: revoking a capability bounds *future* access.
+- **Information revocation** — the holder no longer *knows* what it already read. Impossible in general, for any system.
+
+For an agent, reading is the common case: an agent granted read on a document has the contents the moment it runs, and revoking the capability afterwards changes nothing about what it knows. A lease buys **bounded future access, not retroactive containment**. Stating this plainly sets the right expectation rather than leaving *revocable* unqualified.
+
+## 8. Open questions
 
 - Revocation of shared memory and of data already copied out of a component.
 - The capability runtime's attenuation/revocation model at the Runtime level.
