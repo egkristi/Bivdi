@@ -244,6 +244,41 @@ impl Store {
         Ok(Self::from_snapshot(snap))
     }
 
+    /// Persist the store to a file, atomically (M3).
+    ///
+    /// The bytes are written to a temporary file in the same directory, flushed
+    /// with `fsync`, then renamed over the target. A crash therefore leaves
+    /// either the old file or the new one, never a partial write.
+    pub fn save_to_path(&self, path: &std::path::Path) -> Result<(), ObjectError> {
+        use std::io::Write;
+
+        let bytes = self.save_cbor();
+        let dir = path
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or_else(|| std::path::Path::new("."));
+        // A unique temp name next to the target so the rename is atomic on the
+        // same filesystem.
+        let tmp = dir.join(format!(
+            ".{}.tmp-{}",
+            path.file_name().and_then(|n| n.to_str()).unwrap_or("store"),
+            std::process::id()
+        ));
+        {
+            let mut f = std::fs::File::create(&tmp).map_err(|_| ObjectError::Io)?;
+            f.write_all(&bytes).map_err(|_| ObjectError::Io)?;
+            f.sync_all().map_err(|_| ObjectError::Io)?;
+        }
+        std::fs::rename(&tmp, path).map_err(|_| ObjectError::Io)?;
+        Ok(())
+    }
+
+    /// Load a store from a file written by [`Store::save_to_path`].
+    pub fn load_from_path(path: &std::path::Path) -> Result<Self, ObjectError> {
+        let bytes = std::fs::read(path).map_err(|_| ObjectError::Io)?;
+        Self::load_cbor(&bytes)
+    }
+
     /// Build a serializable snapshot of the current store. Held under the same
     /// lock discipline as `save`, so a snapshot is a consistent point-in-time
     /// view of the whole graph.
@@ -311,6 +346,8 @@ struct Snapshot {
 pub enum ObjectError {
     NotACatalog,
     CorruptSnapshot,
+    /// A filesystem I/O error during persistence.
+    Io,
 }
 
 /// A failed CAS: the actual value observed.
@@ -453,5 +490,30 @@ mod tests {
             Store::load_cbor(&[0xff, 0x00, 0x01, 0x02]),
             Err(ObjectError::CorruptSnapshot)
         ));
+    }
+
+    #[test]
+    fn save_and_load_from_disk_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("bivdi-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("store.bivdi");
+
+        let s = Store::new();
+        let blob = s.put_blob(b"persisted to disk".to_vec());
+        let cell = s.new_cell();
+        let h = blake3_hash(b"v1");
+        s.cell_cas(cell, None, Some(h)).unwrap();
+        let cat = s.new_catalog();
+        s.catalog_put(cat, "blob", blob).unwrap();
+
+        s.save_to_path(&path).unwrap();
+        let loaded = Store::load_from_path(&path).unwrap();
+
+        assert_eq!(loaded.get_blob(blob).unwrap(), b"persisted to disk");
+        assert_eq!(loaded.cell_read(cell).unwrap(), Some(h));
+        assert_eq!(loaded.catalog_get(cat, "blob"), Some(blob));
+
+        // Clean up.
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

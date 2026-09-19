@@ -49,11 +49,11 @@ fn main() {
     println!("\nBivdi — nothing has ambient authority. Everything must ask.");
 }
 
-/// Demonstrate that state survives a save/load round trip.
+/// Demonstrate that state survives a save/load round trip to disk.
 fn demo_persistence(path: &str) {
-    println!("== Object store persistence (provisional Phase 0 format) ==\n");
+    println!("== Object store persistence (deterministic CBOR, atomic) ==\n");
 
-    // First "run": write state.
+    // First "run": write state to disk atomically.
     let store = Store::new();
     let blob = store.put_blob(b"durable greeting".to_vec());
     let cell = store.new_cell();
@@ -62,13 +62,12 @@ fn demo_persistence(path: &str) {
     let cat = store.new_catalog();
     store.catalog_put(cat, "greeting", blob).unwrap();
 
-    let json = store.save();
-    std::fs::write(path, &json).expect("write store file");
-    println!("  saved {} bytes to {path}", json.len());
+    let p = std::path::Path::new(path);
+    store.save_to_path(p).expect("save store to disk");
+    println!("  saved store to {path} (atomic, fsync)");
 
     // Second "run": load state from disk.
-    let loaded =
-        Store::load(&std::fs::read_to_string(path).expect("read store file")).expect("load store");
+    let loaded = Store::load_from_path(p).expect("load store from disk");
     println!(
         "  loaded blob   = {:?}",
         String::from_utf8_lossy(&loaded.get_blob(blob).unwrap())
