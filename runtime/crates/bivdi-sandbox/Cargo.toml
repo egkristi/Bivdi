@@ -1,0 +1,10 @@
+[package]
+name = "bivdi-sandbox"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi sandbox: seccomp-BPF and Landlock hardening for the Runtime (Linux)"
+
+[dependencies]
+libc = "0.2"

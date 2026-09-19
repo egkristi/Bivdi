@@ -15,5 +15,6 @@ bivdi-event = { path = "../bivdi-event" }
 bivdi-identity = { path = "../bivdi-identity" }
 bivdi-runtime = { path = "../bivdi-runtime" }
 bivdi-wasm = { path = "../bivdi-wasm" }
+bivdi-sandbox = { path = "../bivdi-sandbox" }
 serde_json.workspace = true
 wat = "1"

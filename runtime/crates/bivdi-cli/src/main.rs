@@ -32,6 +32,10 @@ fn main() {
         demo_wasm();
         return;
     }
+    if args.len() >= 2 && args[1] == "sandbox" {
+        demo_sandbox();
+        return;
+    }
 
     println!("== Bivdi Runtime (six primitives) ==\n");
 
@@ -321,6 +325,30 @@ fn run_agent_scenario() {
     println!(
         "  authority provenance = {} events (granted/used/denied)",
         provenance.len()
+    );
+    println!();
+}
+
+/// Demonstrate the sandbox: report the state of seccomp and Landlock.
+///
+/// This engages the sandbox **best-effort**. On a host that permits it, both
+/// mechanisms engage and the process is subsequently confined to a read-only
+/// filesystem and a conservative syscall allowlist. On a host that forbids it
+/// (e.g. an old kernel or a restrictive container seccomp profile), the report
+/// says so honestly rather than claiming to be hardened — the RFC 0003
+/// principle of never overclaiming a guarantee the platform does not enforce.
+fn demo_sandbox() {
+    println!("== Sandbox (seccomp + Landlock) ==\n");
+
+    let report = bivdi_sandbox::engage();
+    println!("  {}", bivdi_sandbox::report(&report));
+    println!(
+        "  fully hardened = {}",
+        if report.is_hardened() {
+            "yes"
+        } else {
+            "no (best-effort)"
+        }
     );
     println!();
 }

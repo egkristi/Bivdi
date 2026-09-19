@@ -4,7 +4,9 @@
 # are a deployment/compatibility convenience, never a Bivdi primitive.
 
 # ---- build stage ----------------------------------------------------------
-FROM rust:1.85 AS build
+# MSRV is 1.88 (workspace `rust-version` + `runtime/rust-toolchain.toml`);
+# use the matching image so `--locked` can resolve ICU/wasmtime transitive deps.
+FROM rust:1.88 AS build
 WORKDIR /src
 COPY runtime/ .
 RUN cargo build --workspace --locked --release

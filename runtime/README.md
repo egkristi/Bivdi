@@ -26,6 +26,7 @@ A–C in `ROADMAP.md`.
 | `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
 | `bivdi-wasm` | The **WASI runtime**: executes WASI modules with an explicit, least-authority capability context. |
 | `bivdi-net` | The **networking model**: identity-based endpoints and flow capabilities (no raw sockets). |
+| `bivdi-sandbox` | The **sandbox**: a seccomp syscall allowlist and a read-only Landlock policy (best-effort; reports honestly when the host forbids it). |
 | `bivdi-cli` | A CLI tying the pieces together for an end-to-end demo. |
 
 ## Provisional decisions (marked, not finalized)
