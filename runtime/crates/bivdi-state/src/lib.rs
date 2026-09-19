@@ -50,9 +50,16 @@ pub struct Generation {
 /// The state engine: holds generations, reconciles, and rolls back.
 #[derive(Debug)]
 pub struct StateEngine {
-    generations: Arc<Mutex<Vec<Generation>>>,
-    active: Arc<Mutex<u64>>,
+    /// A single lock guards both the generation list and the active pointer,
+    /// so there is no lock-ordering hazard between `apply` and `rollback`.
+    inner: Arc<Mutex<EngineInner>>,
     observed: Arc<Mutex<ObservedState>>,
+}
+
+#[derive(Debug)]
+struct EngineInner {
+    generations: Vec<Generation>,
+    active: u64,
 }
 
 impl StateEngine {
@@ -63,8 +70,10 @@ impl StateEngine {
             previous: None,
         };
         Self {
-            generations: Arc::new(Mutex::new(vec![g])),
-            active: Arc::new(Mutex::new(0)),
+            inner: Arc::new(Mutex::new(EngineInner {
+                generations: vec![g],
+                active: 0,
+            })),
             observed: Arc::new(Mutex::new(ObservedState {
                 replicas: BTreeMap::new(),
             })),
@@ -72,28 +81,31 @@ impl StateEngine {
     }
 
     /// Apply a new desired state as a new immutable generation.
+    ///
+    /// The new generation links to the *currently active* generation, so that
+    /// `apply → rollback → apply` rolls back to the correct predecessor.
     pub fn apply(&self, desired: DesiredState) -> u64 {
-        let mut gens = self.generations.lock().unwrap();
-        let number = gens.len() as u64;
-        let previous = Some(number - 1);
-        gens.push(Generation {
+        let mut inner = self.inner.lock().unwrap();
+        let number = inner.generations.len() as u64;
+        let previous = Some(inner.active);
+        inner.generations.push(Generation {
             number,
             desired,
             previous,
         });
-        *self.active.lock().unwrap() = number;
+        inner.active = number;
         number
     }
 
     /// The currently active generation number.
     pub fn active(&self) -> u64 {
-        *self.active.lock().unwrap()
+        self.inner.lock().unwrap().active
     }
 
     /// The desired state of the active generation.
     pub fn active_desired(&self) -> DesiredState {
-        let gens = self.generations.lock().unwrap();
-        gens[*self.active.lock().unwrap() as usize].desired.clone()
+        let inner = self.inner.lock().unwrap();
+        inner.generations[inner.active as usize].desired.clone()
     }
 
     /// Reconcile desired vs. observed, returning the ordered actions to take.
@@ -134,18 +146,18 @@ impl StateEngine {
 
     /// Roll back to a previous generation (transactional: just a pointer move).
     pub fn rollback(&self) -> Option<u64> {
-        let mut active = self.active.lock().unwrap();
-        let gens = self.generations.lock().unwrap();
-        let prev = gens[*active as usize].previous?;
-        *active = prev;
+        let mut inner = self.inner.lock().unwrap();
+        let prev = inner.generations[inner.active as usize].previous?;
+        inner.active = prev;
         Some(prev)
     }
 
     /// The full generation history (for inspection).
     pub fn history(&self) -> Vec<(u64, DesiredState)> {
-        self.generations
+        self.inner
             .lock()
             .unwrap()
+            .generations
             .iter()
             .map(|g| (g.number, g.desired.clone()))
             .collect()
@@ -208,5 +220,20 @@ mod tests {
         let rolled = e.rollback().unwrap();
         assert_eq!(rolled, 0);
         assert_eq!(e.active_desired(), ds(&[("web", 1)]));
+    }
+
+    #[test]
+    fn rollback_then_apply_links_to_correct_predecessor() {
+        let e = StateEngine::new(ds(&[("web", 1)])); // gen 0
+        e.apply(ds(&[("web", 2)])); // gen 1
+        e.apply(ds(&[("web", 3)])); // gen 2
+                                    // Roll back to gen 1.
+        assert_eq!(e.rollback().unwrap(), 1);
+        // Apply a new generation from gen 1; it must link to gen 1.
+        let g3 = e.apply(ds(&[("web", 4)]));
+        assert_eq!(e.active(), g3);
+        // Rolling back from g3 must return to gen 1 (not gen 0).
+        assert_eq!(e.rollback().unwrap(), 1);
+        assert_eq!(e.active_desired(), ds(&[("web", 2)]));
     }
 }

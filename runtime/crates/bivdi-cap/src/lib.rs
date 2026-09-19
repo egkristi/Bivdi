@@ -64,6 +64,12 @@ impl Lease {
     pub fn is_expired(&self) -> bool {
         Instant::now() >= self.expires_at
     }
+
+    /// The remaining duration before expiry (zero if expired). Used to clamp a
+    /// derived lease so it cannot outlive the parent it was delegated from.
+    pub fn remaining(&self) -> Duration {
+        self.expires_at.saturating_duration_since(Instant::now())
+    }
 }
 
 /// A provenance event (authority-relevant only; never content).
@@ -81,6 +87,12 @@ pub enum Event {
     },
     Revoked {
         cap: u64,
+    },
+    /// An authority-relevant action was performed using a capability.
+    Acted {
+        cap: u64,
+        resource: Resource,
+        right: Right,
     },
 }
 
@@ -177,6 +189,11 @@ impl CapRuntime {
         }
     }
 
+    /// The lease currently attached to a capability, if any.
+    pub fn lease_of(&self, cap: &Capability) -> Option<Lease> {
+        self.caps.get(&cap.id).and_then(|(_, lease)| *lease)
+    }
+
     /// Revoke a capability and its entire derived subtree (transitively).
     pub fn revoke(&mut self, cap: &Capability) {
         let mut to_remove = BTreeSet::new();
@@ -185,6 +202,22 @@ impl CapRuntime {
             self.caps.remove(id);
             self.parent.remove(id);
             self.provenance.push(Event::Revoked { cap: *id });
+        }
+    }
+
+    /// Record that `cap` was used to exercise `right` over `resource`.
+    /// Returns `false` (and records nothing) if the capability is not held or
+    /// does not grant the right.
+    pub fn record_use(&mut self, cap: &Capability, resource: Resource, right: Right) -> bool {
+        if self.check(cap, resource, right) {
+            self.provenance.push(Event::Acted {
+                cap: cap.id,
+                resource,
+                right,
+            });
+            true
+        } else {
+            false
         }
     }
 

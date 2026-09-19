@@ -132,16 +132,19 @@ fn demo_agent_host() {
     println!("-- Agent host: constrained, quota-bound, non-escalating --");
     let mut host = AgentHost::new();
 
-    // A "calendar" resource.
+    // A "calendar" resource, owned by minting a root capability.
     let calendar = Resource(42);
+    let root = host.mint_root(calendar, Right::Grant);
 
-    // Spawn an agent with read-only access, a 10-action quota, 1 delegation.
-    let mut agent = host.spawn(
-        calendar,
-        Right::Read,
-        Duration::from_secs(60),
-        Quota::new(10, 1),
-    );
+    // Spawn an agent from the root, attenuated to read-only, 10-action quota.
+    let mut agent = host
+        .spawn(
+            &root,
+            Right::Read,
+            Duration::from_secs(60),
+            Quota::new(10, 1),
+        )
+        .unwrap();
     println!("  spawned agent {} with Read over resource 42", agent.id);
 
     // It can read…
@@ -165,12 +168,14 @@ fn demo_agent_host() {
     println!("  delegation cannot escalate = {}", escalation.is_err());
 
     // A read-only agent with a tiny quota: exhaustion is predictable.
-    let mut small = host.spawn(
-        calendar,
-        Right::Read,
-        Duration::from_secs(60),
-        Quota::new(1, 0),
-    );
+    let mut small = host
+        .spawn(
+            &root,
+            Right::Read,
+            Duration::from_secs(60),
+            Quota::new(1, 0),
+        )
+        .unwrap();
     host.execute(&mut small, calendar, Right::Read).unwrap();
     println!(
         "  quota exhausted after 1 action = {}",
@@ -182,5 +187,10 @@ fn demo_agent_host() {
 }
 
 fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
+    use std::fmt::Write;
+    let mut s = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        let _ = write!(s, "{b:02x}");
+    }
+    s
 }

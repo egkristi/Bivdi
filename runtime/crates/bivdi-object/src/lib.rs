@@ -114,8 +114,10 @@ impl Store {
         h
     }
 
-    /// Store a blob and return its handle. Content addressing means storing the
-    /// same bytes twice returns the same content hash.
+    /// Store a blob and return its handle. Content addressing means the blob is
+    /// *named by* its hash — identical bytes hash identically. Phase 0 does not
+    /// yet deduplicate storage: each `put_blob` allocates a fresh handle even
+    /// for identical bytes. (Block-level deduplication is a future concern.)
     pub fn put_blob(&self, data: impl Into<Vec<u8>>) -> Handle {
         let data = data.into();
         let hash = blake3_hash(&data);
