@@ -50,7 +50,7 @@ RFCs in flight. None is binding until accepted; an accepted RFC updates this fil
 |---|---|---|
 | [`0001`](../rfcs/0001-target-niche.md) | First target niche: the agent execution host | Accepted → `D-014` |
 | [`0002`](../rfcs/0002-interface-definition-language.md) | Interface definition language and wire format | Accepted → `D-015` |
-| [`0003`](../rfcs/0003-platform-guarantees.md) | Platform guarantees matrix | Deferred (Core track) |
+| [`0003`](../rfcs/0003-platform-guarantees.md) | Platform guarantees matrix | Deferred (Core track) — see the deferral-consequence note in that RFC: `D-002` and `D-006` remain binding decided items that contradict each other until the deferral is resolved (2026-09-20 audit, P8). |
 | [`0004`](../rfcs/0004-kernel-choice.md) | Kernel choice: reuse seL4 | Deferred (`P-001`) |
 
 ### Decisions still owed an RFC

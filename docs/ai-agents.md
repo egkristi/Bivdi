@@ -43,7 +43,7 @@ User / organization
 - **Time-limited.** Capabilities expire when the task ends or a deadline passes.
 - **Quota-bound.** Hard limits on CPU, memory, network calls, cost, and number of actions.
 - **No escalation.** An agent can never delegate more than it holds.
-- **Content is data, not instructions.** What an agent reads grants it no new rights; only the user or an authorized policy can widen access.
+- **Content cannot modify authority.** What an agent reads never widens what it may do; only the user or an authorized policy can widen access. This is the enforceable invariant, stated precisely: an injection in content may still *influence* the agent's reasoning, but the action it produces is still checked against capabilities the content had no power to change.
 - **Irreversible actions require confirmation.** Sending, deleting, paying, and publishing can require explicit human approval, defined as policy.
 - **Full provenance.** Every write is traceable to the agent, the task, and the capability chain.
 

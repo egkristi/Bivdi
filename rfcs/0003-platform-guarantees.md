@@ -13,6 +13,8 @@
 
 **Deferral note (2026-09-19).** With the strategic pivot to "Bivdi Runtime is the product" and the microkernel (`P-001`) deferred indefinitely, the driver-isolation and IOMMU questions this RFC scopes are no longer on the critical path. The Runtime runs on Linux, where the host kernel — not Bivdi — owns DMA isolation. This RFC is therefore **deferred**, not rejected: it becomes relevant again only if and when Bivdi Core (the microkernel track) is reactivated. Its substance — never overclaim a guarantee a platform does not actually enforce — remains a standing principle and is applied to the Runtime's own claims in the meantime.
 
+> **Deferral consequence (2026-09-20 audit, P8).** Deferring this RFC leaves `D-002` (Firecracker and the public clouds as first targets) and `D-006` (IOMMU required) both standing as *binding* decided items that contradict each other, with the reconciliation in a deferred document. If platform guarantees are simply not relevant while the Runtime is the product — a reasonable position — then that position should be recorded here, and `D-002`/`D-006` marked as **parked alongside Core** rather than binding. As written, the three-part gap (hardware IOMMU absent on first targets, hypervisor joining the TCB, and seL4's unverified IOMMU path — P4) stays distributed across three documents, none of which states it in full.
+
 ## 2. Motivation
 
 **`D-006`** says IOMMU is required and that hardware without one is *never supported*. The hardware-tier table in `README.md` §13 ends with that row. It is load-bearing: `ARCHITECTURE.md` §12.1 explains that a driver "receives no ability to touch memory outside its domain — which is why a compromised GPU driver is a graphics outage, not a root compromise."
