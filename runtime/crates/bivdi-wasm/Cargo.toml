@@ -1,0 +1,13 @@
+[package]
+name = "bivdi-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Bivdi WASI runtime: execute WASI components as native applications"
+
+[dependencies]
+wasmtime = "20"
+
+[dev-dependencies]
+wat = "1"

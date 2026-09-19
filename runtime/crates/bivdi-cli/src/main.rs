@@ -10,6 +10,7 @@ use bivdi_identity::{Identity, IdentityService, Kind};
 use bivdi_object::{blake3_hash, Store};
 use bivdi_runtime::Node;
 use bivdi_state::{Action, DesiredState, StateEngine};
+use bivdi_wasm::WasiRuntime;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -25,6 +26,10 @@ fn main() {
     }
     if args.len() >= 2 && args[1] == "scenario" {
         run_agent_scenario();
+        return;
+    }
+    if args.len() >= 2 && args[1] == "wasm" {
+        demo_wasm();
         return;
     }
 
@@ -312,6 +317,20 @@ fn run_agent_scenario() {
         "  event-fabric history = {} events",
         node.events.history().len()
     );
+    println!();
+}
+
+/// Demonstrate the WASI runtime: compile and run a WASI module.
+fn demo_wasm() {
+    println!("== WASI runtime (D-004 native application format) ==\n");
+
+    // A WASI module exporting `add(i32, i32) -> i32`.
+    let add_wat = "(module (func (export \"add\") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))";
+    let wasm = wat::parse_str(add_wat).unwrap();
+
+    let mut rt = WasiRuntime::new(&wasm).unwrap();
+    println!("  compiled module, exports = {:?}", rt.exports());
+    println!("  add(2, 3) = {}", rt.call_i32_i32("add", 2, 3).unwrap());
     println!();
 }
 
