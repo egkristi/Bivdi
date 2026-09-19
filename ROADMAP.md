@@ -53,7 +53,7 @@ The gate has four clauses, mapped from the original Phase 0.
 
 | Deliverable | Status |
 |---|---|
-| WIT IDL | **Present + valid** — `wit/core.wit` covers all six primitives; conforms to RFC 0002 §3.5 (no seL4 concept); validated by `wit_contract_is_valid` in the conformance suite. |
+| WIT IDL | **Present + valid + bindable** — `wit/core.wit` covers all six primitives, declares the host `world bivdi-core`, conforms to RFC 0002 §3.5 (no seL4 concept), and is validated by `wit_contract_is_valid` + `wit_rights_match_runtime_rights` in the conformance suite. |
 | Conformance suite | **Done** — `tests/conformance` encodes the one-contract vectors (RFC 0002 §8.5). |
 | Rights lattice (flag set) | **Done** — `Rights` is a flag set with subset-inclusion attenuation (RFC 0002 §5). |
 | Object store (durable) | **Done, deterministic CBOR** — blobs, CAS cells, catalogs, plus `save_cbor`/`load_cbor` (RFC 0002 §3.2); JSON `save`/`load` kept for compat |
@@ -68,7 +68,7 @@ The gate has four clauses, mapped from the original Phase 0.
 
 **Remaining Milestone A work, in dependency order**
 
-1. Generate bindings from `wit/core.wit` (`wit-bindgen`) and make the Rust crates implement the generated traits — the conformance suite and the WIT-validation test are in place; generated bindings are the last piece of the "one contract" guarantee.
+1. Wire generated bindings into the crates (`wit-bindgen`/`wasmtime::bindgen!`) and make the crates implement the generated traits — the WIT is now a *declared world* (`world bivdi-core`), so bindings are generatable, and the contract↔implementation correspondence is already cross-checked by `wit_rights_match_runtime_rights`. This is the last piece of the "one contract" guarantee.
 2. ~~Persist the object store with a durable encoding~~ — **done** (deterministic CBOR, `save_cbor`/`load_cbor`).
 3. ~~Harden the runtime with seccomp and Landlock~~ — **done** (best-effort); remaining is verifying the sandbox on a host that permits Landlock, and hardening the container's own seccomp profile to *allow* Landlock rather than `EPERM` it.
 

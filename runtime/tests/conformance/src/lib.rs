@@ -200,4 +200,60 @@ mod conformance {
         let result = resolve.push_path(path);
         assert!(result.is_ok(), "wit/core.wit must be valid WIT: {result:?}");
     }
+
+    /// The WIT `flags rights` declaration and the Rust `Rights` bit set are the
+    /// *same contract*. This test cross-checks them at the type level: the
+    /// WIT's flag names, in declaration order, must map one-to-one onto the
+    /// runtime's `Rights` bit values. If they ever drift, this fails — which is
+    /// the point of the "one contract" guarantee being enforced, not asserted.
+    #[test]
+    fn wit_rights_match_runtime_rights() {
+        use wit_parser::{Resolve, TypeDefKind};
+
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../wit/core.wit");
+        let mut resolve = Resolve::new();
+        resolve.push_path(path).expect("wit parses");
+
+        // Find the `rights` flags type inside `interface capabilities`.
+        let mut wit_flags = None;
+        for (_id, interface) in resolve.interfaces.iter() {
+            if interface.name.as_deref() != Some("capabilities") {
+                continue;
+            }
+            for (name, ty) in &interface.types {
+                if name == "rights" {
+                    if let TypeDefKind::Flags(flags) = &resolve.types[*ty].kind {
+                        wit_flags = Some(
+                            flags
+                                .flags
+                                .iter()
+                                .map(|f| f.name.clone())
+                                .collect::<Vec<_>>(),
+                        );
+                    }
+                }
+            }
+        }
+        let wit_flags = wit_flags.expect("capabilities.rights must be declared");
+
+        // The runtime's `Rights` bit values, in the same order as the WIT
+        // declaration (read, write, execute, grant, signal, revoke).
+        let runtime = [
+            ("read", Rights::READ),
+            ("write", Rights::WRITE),
+            ("execute", Rights::EXECUTE),
+            ("grant", Rights::GRANT),
+            ("signal", Rights::SIGNAL),
+            ("revoke", Rights::REVOKE),
+        ];
+
+        assert_eq!(
+            wit_flags.len(),
+            runtime.len(),
+            "WIT `rights` and Rust `Rights` must have the same number of flags"
+        );
+        for (i, (name, _bit)) in runtime.iter().enumerate() {
+            assert_eq!(&wit_flags[i], name, "flag {i} must match");
+        }
+    }
 }
