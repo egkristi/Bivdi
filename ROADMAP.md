@@ -1,6 +1,6 @@
 # Bivdi — Roadmap
 
-**Status:** Phase 0 in progress. This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Only the items marked *Decided* in `README.md` §16 are binding. No timeline is estimated here — phases are ordered by dependency, not by date.
+**Status:** Phase 0 complete; Phase 1 Runtime half complete (microkernel bring-up remains, blocked on `P-001`). This roadmap is a proposal synthesized from the workgroup documents and the decisions recorded in `README.md`. Only the items marked *Decided* in `README.md` §16 are binding. No timeline is estimated here — phases are ordered by dependency, not by date.
 
 **How to read this document:** each phase lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next phase begins — not an aspiration. Phases are ordered by dependency and gated by outcomes, not by schedule.
 
