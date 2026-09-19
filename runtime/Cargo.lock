@@ -9,6 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
+name = "bivdi-agent"
+version = "0.1.0"
+dependencies = [
+ "bivdi-cap",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "bivdi-cap"
 version = "0.1.0"
 
@@ -16,6 +25,7 @@ version = "0.1.0"
 name = "bivdi-cli"
 version = "0.1.0"
 dependencies = [
+ "bivdi-agent",
  "bivdi-cap",
  "bivdi-object",
  "bivdi-state",

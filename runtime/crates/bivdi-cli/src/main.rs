@@ -1,9 +1,9 @@
-//! Bivdi Runtime CLI — Phase 0 end-to-end demo.
+//! Bivdi Runtime CLI — Phase 0 + Phase 1 (agent host) demo.
 //!
-//! Ties the object store, capability runtime, and state engine together to
-//! demonstrate the decided model: content addressing, CAS, attenuation,
-//! revocation, and declarative reconciliation.
+//! Ties the object store, capability runtime, state engine, and agent host
+//! together to demonstrate the decided model.
 
+use bivdi_agent::{AgentHost, Quota};
 use bivdi_cap::{CapRuntime, Lease, Resource, Right};
 use bivdi_object::{blake3_hash, Store};
 use bivdi_state::{Action, DesiredState, StateEngine};
@@ -11,11 +11,12 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 fn main() {
-    println!("== Bivdi Runtime (Phase 0) ==\n");
+    println!("== Bivdi Runtime (Phase 0 + Phase 1 agent host) ==\n");
 
     demo_object_store();
     demo_capabilities();
     demo_state_engine();
+    demo_agent_host();
 
     println!("\nBivdi — nothing has ambient authority. Everything must ask.");
 }
@@ -124,6 +125,59 @@ fn demo_state_engine() {
 
     // Show the actions vector type is used.
     let _unused: Vec<Action> = engine.reconcile();
+    println!();
+}
+
+fn demo_agent_host() {
+    println!("-- Agent host: constrained, quota-bound, non-escalating --");
+    let mut host = AgentHost::new();
+
+    // A "calendar" resource.
+    let calendar = Resource(42);
+
+    // Spawn an agent with read-only access, a 10-action quota, 1 delegation.
+    let mut agent = host.spawn(
+        calendar,
+        Right::Read,
+        Duration::from_secs(60),
+        Quota::new(10, 1),
+    );
+    println!("  spawned agent {} with Read over resource 42", agent.id);
+
+    // It can read…
+    println!(
+        "  agent can read = {}",
+        host.execute(&mut agent, calendar, Right::Read).is_ok()
+    );
+    // …but not write (prompt-injection cannot grant write).
+    println!(
+        "  agent cannot write = {}",
+        host.execute(&mut agent, calendar, Right::Write).is_err()
+    );
+
+    // It cannot delegate a wider right than it holds.
+    let escalation = host.delegate(
+        &mut agent,
+        Right::Write,
+        Duration::from_secs(60),
+        Quota::new(1, 0),
+    );
+    println!("  delegation cannot escalate = {}", escalation.is_err());
+
+    // A read-only agent with a tiny quota: exhaustion is predictable.
+    let mut small = host.spawn(
+        calendar,
+        Right::Read,
+        Duration::from_secs(60),
+        Quota::new(1, 0),
+    );
+    host.execute(&mut small, calendar, Right::Read).unwrap();
+    println!(
+        "  quota exhausted after 1 action = {}",
+        host.execute(&mut small, calendar, Right::Read).is_err()
+    );
+
+    println!("  provenance events = {}", host.provenance_len());
     println!();
 }
 
