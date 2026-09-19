@@ -49,3 +49,32 @@ jobs:
 
       - name: Test
         run: cargo test --workspace --locked
+
+  msrv:
+    name: Minimum supported Rust version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MSRV toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.88.0
+      - name: Check against MSRV
+        run: cargo check --workspace --locked
+
+  license-and-audit:
+    name: Security advisories
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run cargo-audit
+        uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+

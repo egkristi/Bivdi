@@ -31,6 +31,7 @@ If you are reporting a problem or proposing a change, the issue is the place to 
 
 - Commit after major changes, completed features, or new versions/releases.
 - Use **Conventional Commits**: `type(scope): summary`, where `type` is `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, or `ci`. Reference the issue (e.g., `docs(workflow): enforce CI-gated merges (#5)`).
+- **Sign off (DCO).** Add `Signed-off-by:` to every commit (`git commit -s`), per `LICENSING.md` §3. Verified in CI.
 - Push the branch after committing and open the MR.
 - Do not batch unrelated work into one branch or MR.
 - Do not commit throwaway or generated artifacts; keep `.gitignore` accurate (`temp/` is currently excluded).
