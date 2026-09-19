@@ -1,6 +1,6 @@
-# RFC 0001 — First target niche: the headless agent and server host
+# RFC 0001 — First target niche: the agent execution host
 
-**Status:** Proposed
+**Status:** Accepted
 **Issue:** #39
 **Resolves:** `P-002` (first target market / niche)
 **Date:** 2026-09-19
@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-Resolve `P-002` as the **headless agent and server host**: machines that run AI agents and server workloads against real systems, with no graphical surface, no browser, and no desktop hardware. This is a decision about *who the first external user is*, and it cascades into every other open question — including which kernel `P-001` must choose, which is why it should be taken first.
+Resolve `P-002` as the **agent execution host**: the machine you run agents on, where what an agent touched is a queryable fact and what it could touch was bounded before it started. It is headless — no graphical surface, no browser, no desktop hardware. This is a decision about *who the first external user is*, and it cascades into every other open question.
 
 ## 2. Motivation
 
@@ -19,9 +19,13 @@ Leaving it open also has a specific cost: every other decision acquires an impli
 
 ## 3. Proposal
 
-**Bivdi's first target is the headless agent and server host.**
+**Bivdi's first target is the agent execution host.**
 
-Concretely, this means the first external user runs Bivdi as a VM or cloud guest to execute AI agents and server workloads that touch real data and real services, and needs to bound — structurally, not advisorily — what those workloads can reach.
+Concretely, this means the first external user runs Bivdi as a VM or cloud guest to execute AI agents that touch real data and real services, and needs to bound — structurally, not advisorily — what those workloads can reach. The product sentence:
+
+> **Bivdi is the machine you run agents on, where what an agent touched is a queryable fact and what it could touch was bounded before it started.**
+
+The "server host" framing is dropped: Bivdi is not positioned as a general server OS. Server workloads may run alongside agents, but the product is the *agent execution host* — the narrowing keeps the roadmap honest and keeps the differentiation (bounded, attributable agent authority) at the center rather than diluted by a "runs anything" pitch.
 
 ### 3.1 Why this niche
 
@@ -95,18 +99,18 @@ No change to the targets in `ARCHITECTURE.md` §20. The niche does shift which o
 
 Nothing built so far is invalidated — all six runtime crates serve this niche directly. The changes are to sequencing and to framing:
 
-1. `ROADMAP.md` Phase 1 adopts the falsifiable exit gate in §3.4.
-2. Phase 2's Linux ABI layer is re-examined against micro-VM compatibility (see the note in `ROADMAP.md`); for a headless host, a micro-VM reaches most of the same software for a fraction of the effort.
+1. `ROADMAP.md` adopts the falsifiable exit gate in §3.4 as a milestone gate, restructured around the Bivdi Runtime as the product.
+2. The Linux ABI layer is re-examined against micro-VM compatibility; for an agent host, a micro-VM reaches most of the same software for a fraction of the effort.
 3. The SDK's first target is agent tooling, not a general-purpose application framework.
-4. `P-001` is evaluated *against this niche*: the kernel must support VM-guest operation, virtio, and a WASI runtime well. It does not need a display server, a USB stack, or power management, which narrows the comparison considerably.
+4. The microkernel decision (`P-001`) is **deferred indefinitely** — see `docs/decisions.md`. The kernel is not on the critical path for the agent execution host.
 
 ## 9. Document updates
 
 On acceptance:
 
 - `README.md` §16 — move `P-002` from Proposed to Decided as `D-014`; §17 unchanged.
-- `docs/decisions.md` — add `D-014`, strike `P-002` with a pointer to this RFC.
-- `ROADMAP.md` — Phase 1 exit gate replaced per §3.4; Phase 4 dependency note updated to reference this decision.
+- `docs/decisions.md` — add `D-014`, strike `P-002` with a pointer to this RFC; defer `P-001`.
+- `ROADMAP.md` — restructure around the Runtime as the product; adopt the §3.4 scenario as a milestone gate.
 - `docs/ai-agents.md` — add the scenario in §3.4 as the reference test for the decided constraints.
 - `docs/threat-model.md` — note the provenance query interface as security-relevant surface.
 

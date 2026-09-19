@@ -45,7 +45,7 @@ The architecture exists to satisfy eight goals, in priority order:
 │  Drivers  (one isolation domain each · IOMMU-confined)                  │
 │   virtio-* · nvme · ahci · xhci · net · gpu · rtc · tpm · hda          │
 ├────────────────────────────────────────────────────────────────────────┤
-│  Microkernel  (proposed: seL4)                                          │
+│  Microkernel  (deferred research track: seL4 proposed)                  │
 │   scheduling · memory · IPC · capabilities · interrupts · VMM          │
 ├────────────────────────────────────────────────────────────────────────┤
 │  Hardware  (IOMMU required)                                             │
@@ -281,7 +281,7 @@ The TCB is the minimum set whose failure breaks the security model:
 
 The kernel does only what requires the highest privilege: scheduling, virtual address spaces, IPC, capability enforcement, interrupt delivery, and virtualization support. It contains **no** device drivers, **no** filesystem, **no** network stack, and it **never parses a string**. Physical memory is distributed as untyped memory at boot; after boot the kernel allocates nothing, which removes an entire class of exhaustion and use-after-free defects.
 
-**Status:** kernel choice is **open**; **seL4** is the leading proposal (formally verified for functional correctness down to machine code on supported architectures, plus integrity/confidentiality results). The alternative is a small original microkernel written following the seL4 methodology.
+**Status:** kernel choice is **deferred indefinitely** (`P-001`); **seL4** remains the leading proposal (formally verified for functional correctness down to machine code on supported architectures, plus integrity/confidentiality results). The alternative is a small original microkernel written following the seL4 methodology. See [`rfcs/0004-kernel-choice.md`](rfcs/0004-kernel-choice.md). The Runtime runs on the Linux kernel today, hardened with seccomp/Landlock.
 
 ### 14.3 Hardware security
 
@@ -307,16 +307,16 @@ The kernel does only what requires the highest privilege: scheduling, virtual ad
 
 ---
 
-## 16. Two-track strategy
+## 16. Runtime-first strategy
 
-One interface contract, two substrates:
+The **Bivdi Runtime** (Linux, hardened with seccomp/Landlock) is the product. The microkernel **Bivdi Core** is a parked research track, deferred indefinitely (`P-001`). One interface contract (the WIT IDL, `D-015`) is retained so programs written against it run on any future Core without changes.
 
-| Track | Substrate | Purpose |
+| Track | Substrate | Status |
 |---|---|---|
-| **Bivdi Runtime** | Linux (hardened with seccomp/Landlock) | Prove the object, capability, and state model quickly; SDK from day one |
-| **Bivdi Core** | Microkernel (seL4 proposed), VM guest first, bare metal later | The product; the small verified core is the value proposition |
+| **Bivdi Runtime** | Linux (hardened with seccomp/Landlock) | **The product** |
+| **Bivdi Core** | Microkernel (seL4 proposed), VM guest first, bare metal later | Parked research; not on the critical path |
 
-Programs written against the shared IDL/API run on either track without changes. The kernel is an implementation detail; the model is built first.
+The kernel is an implementation detail; the model is built first — and the Runtime is the model in executable form.
 
 ---
 

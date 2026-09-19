@@ -1,17 +1,17 @@
-# Bivdi Runtime (Phase 0)
+# Bivdi Runtime
 
-The **Bivdi Runtime** is the Linux-hosted implementation of the Bivdi model — the first of the two parallel tracks (`D-003`). It proves the object, capability, and state model on Linux before the model is ported to a microkernel.
+The **Bivdi Runtime** is the product (`D-003`). It is the Linux-hosted implementation of the Bivdi model, hardened with seccomp/Landlock. The microkernel **Bivdi Core** is a parked research track, deferred indefinitely (`P-001`).
 
-> **The kernel is not the product.** The product is the object, capability, and state model. This runtime is the model in executable form.
+> **The kernel is not the product.** The product is the object, capability, and state model — concretely, the agent execution host (`D-014`). This runtime is the model in executable form.
 
 ## Status
 
-Phase 0 **complete**, and the Runtime half of Phase 1 **complete**. All six
-primitives (object, capability, state, event, identity, agent) are implemented
-with persistence, composed into an integrated node, and exercised by a WASI
-runtime and CLI demo. **This is a userspace prototype on Linux, not an operating
-system** — there is no kernel, no boot, and no VM guest. The microkernel half of
-Phase 1 is blocked on `P-001`.
+The six primitives (object, capability, state, event, identity, agent) are
+implemented with persistence, composed into an integrated node, and exercised by
+a WASI runtime and CLI demo. **This is a userspace runtime on Linux, not an
+operating system** — there is no kernel, no boot, and no VM guest, and none is
+needed: the Runtime is the product. Remaining work is sequenced as Milestones
+A–C in `ROADMAP.md`.
 
 ## Crates
 
@@ -20,7 +20,7 @@ Phase 1 is blocked on `P-001`.
 | `bivdi-object` | The **object store**: content-addressed blobs, CAS cells, catalogs, save/load. |
 | `bivdi-cap` | The **capability runtime**: mint, attenuate, revoke (subtree), leases, provenance. |
 | `bivdi-state` | The **state engine**: desired state, reconciliation, immutable generations. |
-| `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
+| `bivdi-agent` | The **agent host**: constrained, time-limited, quota-bound agents. |
 | `bivdi-event` | The **event bus**: typed, first-class events with correlation identity. |
 | `bivdi-identity` | The **identity service**: identity kinds, petnames, selective disclosure. |
 | `bivdi-runtime` | The **runtime node**: the six primitives composed into one running system. |
