@@ -11,7 +11,7 @@ description = "Bivdi WASI runtime: execute WASI components as native application
 # 20.x line (including multiple sandbox escapes — unacceptable for an agent
 # execution host) while keeping an MSRV of 1.86, within the workspace 1.88.
 wasmtime = "36"
-wasmtime-wasi = "36"
+wasmtime-wasi = "48"
 
 [dev-dependencies]
 wat = "1"
