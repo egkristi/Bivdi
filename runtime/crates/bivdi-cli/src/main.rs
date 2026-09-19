@@ -168,7 +168,7 @@ fn demo_state_engine() {
         workloads: BTreeMap::from([("web".to_string(), 3)]),
     });
     engine.observe(BTreeMap::from([("web".to_string(), 1)]));
-    println!("  generation {} active", g1);
+    println!("  generation {g1} active");
     println!("  reconcile actions = {:?}", engine.reconcile());
 
     // Rollback is a pointer change.
@@ -326,11 +326,18 @@ fn demo_wasm() {
 
     // A WASI module exporting `add(i32, i32) -> i32`.
     let add_wat = "(module (func (export \"add\") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))";
-    let wasm = wat::parse_str(add_wat).unwrap();
+    let add_wasm = wat::parse_str(add_wat).unwrap();
 
-    let mut rt = WasiRuntime::new(&wasm).unwrap();
+    let rt = WasiRuntime::new_least(&add_wasm).unwrap();
     println!("  compiled module, exports = {:?}", rt.exports());
     println!("  add(2, 3) = {}", rt.call_i32_i32("add", 2, 3).unwrap());
+
+    // A WASI command module (runs `_start` with least authority: stdout only).
+    let cmd_wat = "(module (func (export \"_start\")))";
+    let cmd_wasm = wat::parse_str(cmd_wat).unwrap();
+    let cmd = WasiRuntime::new_least(&cmd_wasm).unwrap();
+    cmd.run_command().unwrap();
+    println!("  WASI command ran to completion (least authority)");
     println!();
 }
 
