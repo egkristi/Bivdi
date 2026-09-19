@@ -97,21 +97,42 @@ impl AgentHost {
         }
     }
 
-    /// Spawn an agent with a capability over `resource`, attenuated to at most
-    /// `right`, leased for `ttl`, and quota-bounded. The agent receives exactly
-    /// what is granted — nothing else.
+    /// Mint a new root capability over a resource. This is the **owner
+    /// operation** — it is what establishes authority over a resource in the
+    /// first place, and it must never be reachable from an agent. Agents only
+    /// ever receive capabilities attenuated from something the caller holds.
+    pub fn mint_root(&mut self, resource: Resource, right: Right) -> Capability {
+        self.runtime.mint(resource, right)
+    }
+
+    /// Spawn an agent from a capability the spawner already holds.
+    ///
+    /// The agent receives a capability **attenuated from `source`** — it can
+    /// never gain authority the spawner did not already hold. `right` is
+    /// further narrowed (clamped) to the source's right. No capability is
+    /// minted here: minting is reserved for a resource's owner.
     pub fn spawn(
         &mut self,
-        resource: Resource,
+        source: &Capability,
         right: Right,
         ttl: Duration,
         quota: Quota,
-    ) -> Agent {
-        let root = self.runtime.mint(resource, Right::Grant);
-        let capability = self.runtime.attenuate(&root, right).unwrap();
+    ) -> Result<Agent, AgentError> {
+        // Clamp the requested right to what the source actually holds.
+        let right = right.min(source.right());
+        // The agent's lease cannot outlive the source's lease, if any.
+        let ttl = if let Some(held) = self.runtime.lease_of(source) {
+            ttl.min(held.remaining())
+        } else {
+            ttl
+        };
+        let capability = self
+            .runtime
+            .attenuate(source, right)
+            .map_err(|_| AgentError::NotAuthorized)?;
         let id = self.next_agent_id;
         self.next_agent_id += 1;
-        Agent {
+        Ok(Agent {
             id,
             capability,
             effective_right: right,
@@ -119,14 +140,15 @@ impl AgentHost {
             quota,
             actions_used: 0,
             delegations_used: 0,
-        }
+        })
     }
 
     /// Execute one plan step on behalf of an agent. This is the enforcement
-    /// point: the host checks lease, quota, and authority before acting. An
-    /// agent cannot act through authority it was not handed.
+    /// point: the host checks lease, quota, and authority before acting, and
+    /// records the action in provenance. An agent cannot act through authority
+    /// it was not handed.
     pub fn execute(
-        &self,
+        &mut self,
         agent: &mut Agent,
         resource: Resource,
         required: Right,
@@ -137,7 +159,10 @@ impl AgentHost {
         if agent.actions_used >= agent.quota.max_actions {
             return Err(AgentError::QuotaExceeded);
         }
-        if !self.runtime.check(&agent.capability, resource, required) {
+        if !self
+            .runtime
+            .record_use(&agent.capability, resource, required)
+        {
             return Err(AgentError::NotAuthorized);
         }
         agent.actions_used += 1;
@@ -145,8 +170,11 @@ impl AgentHost {
     }
 
     /// Delegate a *narrower-or-equal* capability from one agent to a new agent.
-    /// Escalation is structurally denied: the new right cannot exceed the
-    /// delegator's effective right.
+    ///
+    /// Escalation is denied on all three dimensions:
+    /// - the new right cannot exceed the delegator's effective right,
+    /// - the new lease is clamped to the delegator's remaining lease,
+    /// - the new quota is clamped to the delegator's remaining budget.
     pub fn delegate(
         &mut self,
         from: &mut Agent,
@@ -163,6 +191,18 @@ impl AgentHost {
         if right > from.effective_right {
             return Err(AgentError::EscalationDenied);
         }
+        // Clamp time and quota to what the delegator has left.
+        let remaining_actions = from.quota.max_actions.saturating_sub(from.actions_used);
+        let remaining_delegations = from
+            .quota
+            .max_delegations
+            .saturating_sub(from.delegations_used);
+        let child_ttl = ttl.min(from.lease.remaining());
+        let child_quota = Quota::new(
+            quota.max_actions.min(remaining_actions),
+            quota.max_delegations.min(remaining_delegations),
+        );
+
         from.delegations_used += 1;
         let id = self.next_agent_id;
         self.next_agent_id += 1;
@@ -171,11 +211,21 @@ impl AgentHost {
             id,
             capability,
             effective_right: right,
-            lease: Lease::new(ttl),
-            quota,
+            lease: Lease::new(child_ttl),
+            quota: child_quota,
             actions_used: 0,
             delegations_used: 0,
         })
+    }
+
+    /// Execute a full plan on behalf of an agent. Each step is enforced in
+    /// turn; the first failure aborts the plan. This is "AI proposes, the OS
+    /// enforces" — the plan is data, and the host is the enforcement point.
+    pub fn execute_plan(&mut self, agent: &mut Agent, plan: &Plan) -> Result<(), AgentError> {
+        for step in &plan.steps {
+            self.execute(agent, Resource(step.resource), Right::Read)?;
+        }
+        Ok(())
     }
 
     /// The underlying provenance log (authority-relevant events).
@@ -188,15 +238,47 @@ impl AgentHost {
 mod tests {
     use super::*;
 
-    fn host() -> AgentHost {
-        AgentHost::new()
+    /// Convenience: a host with a root capability over a resource.
+    fn host_with_root(resource: Resource, right: Right) -> (AgentHost, Capability) {
+        let mut h = AgentHost::new();
+        let root = h.mint_root(resource, right);
+        (h, root)
+    }
+
+    #[test]
+    fn spawn_cannot_escalate_beyond_source_right() {
+        let res = Resource(10);
+        let (mut h, root) = host_with_root(res, Right::Read);
+        // Requesting Write from a Read-only source clamps to Read.
+        let agent = h
+            .spawn(
+                &root,
+                Right::Write,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap();
+        assert_eq!(agent.effective_right, Right::Read);
+        // The agent cannot act with Write.
+        let mut agent = agent;
+        assert!(matches!(
+            h.execute(&mut agent, res, Right::Write),
+            Err(AgentError::NotAuthorized)
+        ));
     }
 
     #[test]
     fn agent_can_only_act_within_its_authority() {
-        let mut h = host();
         let res = Resource(10);
-        let mut agent = h.spawn(res, Right::Read, Duration::from_secs(60), Quota::new(10, 0));
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap();
         assert!(h.execute(&mut agent, res, Right::Read).is_ok());
         assert!(matches!(
             h.execute(&mut agent, res, Right::Write),
@@ -206,9 +288,16 @@ mod tests {
 
     #[test]
     fn quota_exhaustion_blocks_further_actions() {
-        let mut h = host();
         let res = Resource(10);
-        let mut agent = h.spawn(res, Right::Read, Duration::from_secs(60), Quota::new(2, 0));
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(2, 0),
+            )
+            .unwrap();
         assert!(h.execute(&mut agent, res, Right::Read).is_ok());
         assert!(h.execute(&mut agent, res, Right::Read).is_ok());
         assert!(matches!(
@@ -219,14 +308,16 @@ mod tests {
 
     #[test]
     fn lease_expiry_blocks_action() {
-        let mut h = host();
         let res = Resource(10);
-        let mut agent = h.spawn(
-            res,
-            Right::Read,
-            Duration::from_millis(1),
-            Quota::new(10, 0),
-        );
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_millis(1),
+                Quota::new(10, 0),
+            )
+            .unwrap();
         std::thread::sleep(Duration::from_millis(5));
         assert!(matches!(
             h.execute(&mut agent, res, Right::Read),
@@ -235,15 +326,17 @@ mod tests {
     }
 
     #[test]
-    fn delegation_cannot_escalate() {
-        let mut h = host();
+    fn delegation_cannot_escalate_right() {
         let res = Resource(10);
-        let mut parent = h.spawn(
-            res,
-            Right::Write,
-            Duration::from_secs(60),
-            Quota::new(10, 1),
-        );
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut parent = h
+            .spawn(
+                &root,
+                Right::Write,
+                Duration::from_secs(60),
+                Quota::new(10, 2),
+            )
+            .unwrap();
         // Delegating Write (equal) is allowed.
         let child = h
             .delegate(
@@ -255,12 +348,14 @@ mod tests {
             .unwrap();
         let _ = child;
         // Delegating Grant (wider) is denied.
-        let mut parent2 = h.spawn(
-            res,
-            Right::Write,
-            Duration::from_secs(60),
-            Quota::new(10, 1),
-        );
+        let mut parent2 = h
+            .spawn(
+                &root,
+                Right::Write,
+                Duration::from_secs(60),
+                Quota::new(10, 2),
+            )
+            .unwrap();
         assert!(matches!(
             h.delegate(
                 &mut parent2,
@@ -273,14 +368,81 @@ mod tests {
     }
 
     #[test]
-    fn every_action_is_provenanced() {
-        let mut h = host();
+    fn delegation_clamps_time_and_quota() {
         let res = Resource(10);
-        let mut agent = h.spawn(res, Right::Read, Duration::from_secs(60), Quota::new(10, 0));
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        // Parent has a short lease and a 1-action budget.
+        let mut parent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_millis(30),
+                Quota::new(1, 1),
+            )
+            .unwrap();
+        // Child requests a 1-hour lease and a huge quota.
+        let mut child = h
+            .delegate(
+                &mut parent,
+                Right::Read,
+                Duration::from_secs(3600),
+                Quota::new(1_000_000, 1_000_000),
+            )
+            .unwrap();
+        // The child's quota is clamped to the parent's remaining 1 action.
+        assert_eq!(child.quota.max_actions, 1);
+        // After the parent's lease (and hence the child's clamped lease) expires,
+        // the child cannot act.
+        std::thread::sleep(Duration::from_millis(50));
+        assert!(matches!(
+            h.execute(&mut child, res, Right::Read),
+            Err(AgentError::Expired)
+        ));
+    }
+
+    #[test]
+    fn every_action_is_provenanced() {
+        let res = Resource(10);
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap();
         let before = h.provenance_len();
         h.execute(&mut agent, res, Right::Read).unwrap();
-        // The runtime records mint+attenuate during spawn, and the action check
-        // is an authority-relevant event tracked via the underlying runtime.
-        assert!(h.provenance_len() >= before);
+        assert!(h.provenance_len() > before);
+    }
+
+    #[test]
+    fn plan_is_enforced_by_the_host() {
+        let res = Resource(10);
+        let (mut h, root) = host_with_root(res, Right::Grant);
+        let mut agent = h
+            .spawn(
+                &root,
+                Right::Read,
+                Duration::from_secs(60),
+                Quota::new(10, 0),
+            )
+            .unwrap();
+        // A plan with two steps executes fully within quota.
+        let plan = Plan {
+            steps: vec![
+                Step {
+                    action: "read".into(),
+                    resource: res.0,
+                },
+                Step {
+                    action: "read".into(),
+                    resource: res.0,
+                },
+            ],
+        };
+        assert!(h.execute_plan(&mut agent, &plan).is_ok());
+        assert_eq!(agent.actions_used, 2);
     }
 }

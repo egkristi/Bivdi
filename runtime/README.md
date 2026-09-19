@@ -12,7 +12,7 @@ Phase 0 (from `ROADMAP.md`). In-memory implementations of the three core service
 
 | Crate | What it implements |
 |---|---|
-| `bivdi-object` | The **object store**: content-addressed blobs, CAS cells, catalogs, snapshots. |
+| `bivdi-object` | The **object store**: content-addressed blobs, CAS cells, catalogs. |
 | `bivdi-cap` | The **capability runtime**: mint, attenuate, revoke (subtree), leases, provenance. |
 | `bivdi-state` | The **state engine**: desired state, reconciliation, immutable generations. |
 | `bivdi-agent` | The **agent host** (Phase 1, pre-kernel): constrained, time-limited, quota-bound agents. |
