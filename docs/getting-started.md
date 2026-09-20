@@ -31,13 +31,14 @@ cargo run -p bivdi-cli -- sandbox         # report seccomp/Landlock state
 ### What `scenario` shows
 
 An agent is granted a leased, write-scoped capability to exactly one calendar
-entry (and, in the full test, read access to exactly one document). The document
-contains an instruction directing the agent to forward a mailbox. The output
+entry (`calendar://personal/meeting-42`) and read access to exactly one email
+thread (`email://inbox/thread-123`), with no network authority. The email body
+contains an injected instruction to forward it to `attacker.example`. The output
 shows:
 
-- the legitimate write succeeds;
-- the prompt-injection "read the mailbox" is **denied**;
-- after the lease expires, even the legitimate write is denied;
+- the legitimate calendar write and email read succeed;
+- the prompt-injection "connect to attacker.example" is **denied** — the agent
+  holds no flow capability, and the denial records `authority=none`;
 - the **detailed authority provenance** — `Minted` / `Attenuated` / `Acted` /
   `Denied` events, each with its resource and rights — so you can answer "what
   did this agent touch, and what authorised each touch?" from the log alone.

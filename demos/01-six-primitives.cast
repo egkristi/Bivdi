@@ -1,4 +1,4 @@
-{"version": 2, "width": 80, "height": 24, "timestamp": 1789886127}
+{"version": 2, "width": 80, "height": 24, "timestamp": 1789893405}
 [0.08, "o", "$"]
 [0.16, "o", " "]
 [0.24, "o", "b"]
@@ -35,7 +35,7 @@
 [2.3100000000000005, "o", "  rolled back to generation 0 (desired web = Some(1))\n"]
 [2.3500000000000005, "o", "\n"]
 [2.3900000000000006, "o", "-- Agent host: constrained, quota-bound, non-escalating --\n"]
-[2.4300000000000006, "o", "  spawned agent 0 with Read over resource 42\n"]
+[2.4300000000000006, "o", "  spawned agent 0 with Read over calendar://personal/meeting-42\n"]
 [2.4700000000000006, "o", "  agent can read = true\n"]
 [2.5100000000000007, "o", "  agent cannot write = true\n"]
 [2.5500000000000007, "o", "  delegation cannot escalate = true\n"]
