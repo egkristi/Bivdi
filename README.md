@@ -14,6 +14,28 @@
 
 ---
 
+## Try Bivdi
+
+The Runtime ships as a container image. One command runs the agent-isolation scenario end to end:
+
+```sh
+docker run --rm ghcr.io/egkristi/bivdi:latest
+```
+
+The image's entrypoint is `bivdi-cli`, so any subcommand works the same way:
+
+```sh
+docker run --rm ghcr.io/egkristi/bivdi:latest scenario   # the RFC 0001 §3.4 agent exit-gate scenario
+docker run --rm ghcr.io/egkristi/bivdi:latest wasm       # compile + run a WASI module
+docker run --rm ghcr.io/egkristi/bivdi:latest sandbox    # report seccomp/Landlock sandbox state
+```
+
+`scenario` demonstrates the value proposition in one screen: an agent granted a leased write capability to exactly one object is **denied** the prompt-injection escalation it attempts, and the hash-chained provenance log records every `Minted` / `Attenuated` / `Acted` / `Denied` event. Under five minutes from reading this to watching it run.
+
+Prefer to build from source? [`docs/getting-started.md`](docs/getting-started.md) walks through the Rust toolchain, build, and test.
+
+---
+
 ## 1. What Bivdi is
 
 Bivdi is an operating system for running AI agents, built around a single premise:
