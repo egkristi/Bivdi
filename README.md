@@ -360,6 +360,7 @@ The Runtime lives entirely under `runtime/`. The `kernel/`, `drivers/`, `lib/`, 
 
 ## 20. Further reading
 
+- [Getting started](docs/getting-started.md) — build, test, and run the Runtime in minutes.
 - [seL4](https://sel4.systems) · [WASI](https://wasi.dev) · [Fuchsia](https://fuchsia.dev) · [Genode](https://genode.org) · [Redox](https://www.redox-os.org) · [Qubes OS](https://www.qubes-os.org) · [NixOS](https://nixos.org) · [Firecracker](https://firecracker-microvm.github.io)
 - Klein et al., *seL4: Formal Verification of an OS Kernel* (SOSP 2009)
 - LeVasseur et al., *Unmodified Device Driver Reuse … via Virtual Machines* (OSDI 2004)

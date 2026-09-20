@@ -119,7 +119,7 @@ The gate has four clauses, mapped from the original Phase 0.
 - A container image running the hardened Runtime (deployment, per `D-013`) — `Containerfile` present.
 - A stable CLI (`bivdi-cli`) covering the operator workflow: grant, run, inspect provenance — `grant`/`run` are `scenario`; `inspect provenance` is now rendered in detail.
 - An SDK with generated bindings from the WIT IDL — remaining.
-- Documentation: getting-started, the capability model, the provenance model.
+- Documentation: getting-started, the capability model, the provenance model — **getting-started done** (`docs/getting-started.md`); capability + provenance models are in `docs/`.
 - Operator-facing provenance UX — the "what touched this" query that is half the value proposition. **Now rendered**: `bivdi-cli scenario` prints the detailed hash-chained authority log (`Node::detailed_provenance` → `Minted`/`Attenuated`/`Acted`/`Denied` with resource + rights), not just counts.
 
 **Exit gate.** An external operator runs the agent host from the container image and answers "what did this agent touch, and what authorised each touch?" from the provenance interface alone.
