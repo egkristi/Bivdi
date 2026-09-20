@@ -1,6 +1,6 @@
 # Bivdi — Roadmap
 
-**Status:** The **Bivdi Runtime is the product** (`D-003`). Phase 0 and the Runtime half of Phase 1 are implemented and runnable. The microkernel **Bivdi Core** is a parked research track; the kernel choice (`P-001`) is deferred indefinitely. This roadmap sequences the product (Milestones A–C) and records the parked track without letting it gate any deliverable.
+**Status:** The **Bivdi Runtime is the product** (`D-003`) — a capability-secure execution platform for AI agents, running on Linux. Milestone A is in progress and the Runtime is implemented and runnable. The microkernel **Bivdi Core** is a parked research track; the kernel choice (`P-001`) is deferred indefinitely. This roadmap sequences the product (Milestones A–C) and records the parked track without letting it gate any deliverable.
 
 **How to read this document:** each milestone lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next milestone begins — not an aspiration. Milestones are ordered by dependency and gated by outcomes, not by schedule.
 

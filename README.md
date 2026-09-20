@@ -7,7 +7,7 @@
 
 - **Project:** Bivdi
 - **Domain:** [bivdi.com](https://bivdi.com)
-- **Status:** Phase 0 and the Runtime half of Phase 1 are implemented and runnable (see [`runtime/`](runtime/)). The **Bivdi Runtime is the product**; the microkernel Core is a parked research track.
+- **Status:** Milestone A in progress — the Runtime is implemented and runnable on Linux (see [`runtime/`](runtime/)), with two of the four exit-gate clauses met. The **Bivdi Runtime is the product**; the microkernel Core is a parked research track.
 - **Document:** What Bivdi is.
 
 > **Where things live now.** This file says *what Bivdi is*. The **normative specification** — what a Bivdi system MUST do — is [`SPEC.md`](SPEC.md). The **implementation architecture** is [`ARCHITECTURE.md`](ARCHITECTURE.md). The **execution plan** is [`ROADMAP.md`](ROADMAP.md). The decided/proposed boundary lives in [`docs/decisions.md`](docs/decisions.md).
@@ -16,11 +16,13 @@
 
 ## 1. What Bivdi is
 
-Bivdi is an operating system for running AI agents, built around a single premise:
+Bivdi is a **capability-secure execution platform for AI agents**, running on Linux today. It is built around a single premise:
 
 > **The computer should be a secure, distributed, stateful environment for people and workloads — not a pile of processes wrapped around a filesystem.**
 
-The product is the **agent execution host**: the machine you run agents on, where what an agent touched is a queryable fact and what it could touch was bounded before it started. It abandons several assumptions inherited from 1970s time-sharing systems:
+The long-term vision is an operating system built around the same model. That is a deliberately parked research track (`D-003`) rather than a roadmap commitment — no current deliverable depends on it, and nothing here should be read as describing a kernel that exists.
+
+*Platform* is the category; the **agent execution host** (`D-014`) is the thing you actually run: the machine you point agents at, where what an agent touched is a queryable fact and what it could touch was bounded before it started. It abandons several assumptions inherited from 1970s time-sharing systems:
 
 - **No ambient authority.** A program has no access to anything it was not explicitly handed. There is no `root`, no `sudo`, and no user ID that grants power by virtue of who launched a program.
 - **Objects over files.** Data lives in a typed, versioned, content-addressed object store. The filesystem survives as a compatibility view, not the conceptual center.
