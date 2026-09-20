@@ -4,16 +4,16 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 
 ## Project
 
-**Bivdi** — a capability-secure, object-centric, declarative operating system. The canonical overview, decisions, and open questions live in [`README.md`](README.md). Read it first.
+**Bivdi** — a capability-secure, object-centric, declarative operating system. The canonical overview is [`README.md`](README.md); the normative specification is [`SPEC.md`](SPEC.md); decisions and open questions live in [`docs/decisions.md`](docs/decisions.md). Read the README first.
 
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
 
-**Status:** Phase 0 and the Runtime half of Phase 1 (object/capability/state/event/identity/agent + WASI runtime) are implemented and merged. The **Bivdi Runtime is the product**; the microkernel Core is a parked research track, and the kernel choice (`P-001`) is deferred indefinitely. Do not treat any architectural statement as frozen except the items listed as *Decided* in the README (§16).
+**Status:** Phase 0 and the Runtime half of Phase 1 (object/capability/state/event/identity/agent + WASI runtime) are implemented and merged. The **Bivdi Runtime is the product**; the microkernel Core is a parked research track, and the kernel choice (`P-001`) is deferred indefinitely. Do not treat any architectural statement as frozen except the items listed as *Decided* in [`docs/decisions.md`](docs/decisions.md).
 
 ## Source documents
 
-The original design ideas are the workgroup documents under `temp/` (`workgroup1.md` … `workgroup4.md`). They are **git-ignored** (`temp/` is excluded) and are unedited idea/workshop output — not authoritative specs. When in doubt, the `README.md` is the authoritative synthesis; the workgroup files are background.
+The original design ideas are the workgroup documents under `temp/` (`workgroup1.md` … `workgroup4.md`). They are **git-ignored** (`temp/` is excluded) and are unedited idea/workshop output — not authoritative specs. When in doubt, [`README.md`](README.md) and [`SPEC.md`](SPEC.md) are the authoritative synthesis; the workgroup files are background.
 
 ## Core invariants (never break these)
 
@@ -31,7 +31,7 @@ These are the load-bearing design commitments. Any code, doc, or proposal that c
 
 ## Decided vs. open
 
-Consult `README.md` §16. As of writing:
+Consult [`docs/decisions.md`](docs/decisions.md). As of writing:
 
 - **Decided:** name/domain; VM-engine-first driver target; **Bivdi Runtime is the product (Core parked)**; WASI as native app format; Rust + language-neutral IDL (WIT); **target niche = agent execution host**; IOMMU required; no persistence of running machine state; GPU/Wi-Fi in driver VMs; crypto-shredding for deletion; performance as a first-class attribute; open-core licensing.
 - **Proposed/open:** kernel choice (seL4 is the leading proposal — **deferred indefinitely**); component naming; governance/RFC process.
@@ -78,13 +78,13 @@ tools/      build, package, audit, image tooling — created as needed
 tests/      property, fault-injection, conformance, fuzz — created as needed
 ```
 
-The top-level `services/`, `drivers/`, and `lib/` directories in `README.md` §18 are the *planned* homes for Bivdi Core components (a deferred research track). The Linux Runtime lives entirely under `runtime/`; do not create top-level `services/` etc. for Runtime code.
+The top-level `services/`, `drivers/`, and `lib/` directories in the Repository layout above are the *planned* homes for Bivdi Core components (a deferred research track). The Linux Runtime lives entirely under `runtime/`; do not create top-level `services/` etc. for Runtime code.
 
 ## Process
 
 - Record every non-trivial design decision as an RFC in `rfcs/`, with motivation, security analysis, TCB impact, and migration plan. Kernel-growing or authority-widening changes carry the burden of proof.
 - Keep the threat model updated alongside architectural change.
-- Decisions that resolve a `P-*` or open question in `README.md` §16–17 must update the README accordingly.
+- Decisions that resolve a `P-*` or open question in [`SPEC.md`](SPEC.md) §15 must update [`docs/decisions.md`](docs/decisions.md) and [`SPEC.md`](SPEC.md) accordingly.
 
 ## Build & test
 
@@ -110,7 +110,7 @@ Bivdi follows a GitHub issue-driven workflow. Every change traces back to an iss
 
 - **Everything starts from an issue.** Create the issue first; there is no change without an issue. All work is registered in GitHub Issues before any branch is created.
 - **Scope is single-purpose.** One issue = one concern. Break large efforts into separate issues.
-- **Use a template.** Give each issue a clear title, a description of the problem/motivation, and (where relevant) acceptance criteria and links to any open question in `README.md` §16–17.
+- **Use a template.** Give each issue a clear title, a description of the problem/motivation, and (where relevant) acceptance criteria and links to any open question in [`SPEC.md`](SPEC.md) §15.
 
 ### Branches
 

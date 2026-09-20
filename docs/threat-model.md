@@ -1,6 +1,6 @@
 # Bivdi — Threat Model
 
-**Status:** Working draft, grounded in the decided security model (`README.md` §16). This document grows as the architecture does; it is updated alongside any architectural change.
+**Status:** Working draft, grounded in the decided security model ([`docs/decisions.md`](decisions.md)). This document grows as the architecture does; it is updated alongside any architectural change.
 
 **Scope.** This threat model describes the *decided* security commitments and the adversaries they address. Details that depend on open questions (kernel choice, component naming, specific token/object formats) are marked *proposed*.
 

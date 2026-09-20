@@ -42,7 +42,7 @@ Performance-sensitive paths are IPC, the object store, and scheduling. These car
 ## 4. Open questions
 
 - Exact target values are **proposed**; ratification belongs to spec v0.1.
-- GPU acceleration vs. a small TCB may impose a performance cost that is as yet unquantified (`README.md` §17).
+- GPU acceleration vs. a small TCB may impose a performance cost that is as yet unquantified ([`SPEC.md`](../SPEC.md) §15).
 
 ---
 

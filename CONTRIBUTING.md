@@ -8,7 +8,7 @@ Bivdi's product is the **Bivdi Runtime** under `runtime/` — a running implemen
 
 ## 1. First, read the canonical documents
 
-- [`README.md`](README.md) — the authoritative overview, decisions (§16), and open questions (§17).
+- [`README.md`](README.md) — what Bivdi is; [`SPEC.md`](SPEC.md) — the normative specification; [`docs/decisions.md`](docs/decisions.md) — decisions and open questions.
 - [`AGENTS.md`](AGENTS.md) — guidance for agents and contributors, including the core invariants that must never be broken.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — technical elaboration.
 - [`docs/README.md`](docs/README.md) — what is documented and what is still pending.
@@ -45,7 +45,7 @@ If you are reporting a problem or proposing a change, the issue is the place to 
 
 Record every non-trivial design decision as an RFC in `rfcs/`, with motivation, security analysis, TCB impact, and migration plan. Kernel-growing or authority-widening changes carry the burden of proof. See `rfcs/0000-template.md`.
 
-A decision that resolves a `P-*` or open question in `README.md` §16–17 must also update the README and `docs/decisions.md`.
+A decision that resolves a `P-*` or open question in `SPEC.md` §15 must also update `SPEC.md` and `docs/decisions.md`.
 
 ## 6. Respect the decided/undecided boundary
 

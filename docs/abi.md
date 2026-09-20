@@ -72,9 +72,9 @@ Decided (`D-004`, `D-005`):
 
 1. **Which IDL?** Options include the FIDL/Cap'n Proto style (typed, versioned schemas, generated bindings). No choice is decided.
 2. **Encoding** — canonical binary representation, versioning and evolution rules, and back-compat guarantees.
-3. **Schema evolution semantics** — how interfaces evolve without breaking existing components (this is a system-wide open question, `README.md` §17).
+3. **Schema evolution semantics** — how interfaces evolve without breaking existing components (this is a system-wide open question, [`SPEC.md`](../SPEC.md) §15).
 
-Resolution of the IDL choice must be recorded as an RFC in `rfcs/` and reflected in `README.md` §16–17.
+Resolution of the IDL choice must be recorded as an RFC in [`rfcs/`](../rfcs/README.md) and reflected in [`docs/decisions.md`](decisions.md) and [`SPEC.md`](../SPEC.md).
 
 ---
 

@@ -4,7 +4,7 @@
 
 **Status:** Proposed (then: Accepted / Rejected / Superseded)
 **Issue:** #N — the GitHub issue tracking this decision
-**Resolves:** `P-XXX` or open question(s) from `README.md` §16–17 (list them)
+**Resolves:** `P-XXX` or open question(s) from [`SPEC.md`](../SPEC.md) §15 (list them)
 **Date:** YYYY-MM-DD
 
 ---
@@ -43,7 +43,7 @@ How the change is introduced without breaking the decided model or existing work
 
 ## 9. Document updates
 
-Which files must change when this is accepted: `README.md` §16–17, `docs/decisions.md`, and any affected `docs/` documents.
+Which files must change when this is accepted: [`docs/decisions.md`](../docs/decisions.md), [`SPEC.md`](../SPEC.md), and any affected `docs/` documents.
 
 ---
 

@@ -14,7 +14,7 @@ Copy [`0000-template.md`](0000-template.md) to `NNNN-slug.md` to start one.
 ## Status values
 
 - **Proposed** — written, under discussion, binding on nothing.
-- **Accepted** — decided. `docs/decisions.md` and `README.md` §16–17 are updated in the same change.
+- **Accepted** — decided. [`docs/decisions.md`](../docs/decisions.md) and [`SPEC.md`](../SPEC.md) are updated in the same change.
 - **Deferred** — not decided; parked. It may be re-opened later and is kept as the recorded analysis for when it is.
 - **Rejected** — kept, not deleted. The history of a decision is part of the decision.
 - **Superseded** — replaced by a later RFC, which is named here.
