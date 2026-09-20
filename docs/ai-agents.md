@@ -1,6 +1,6 @@
 # Bivdi — AI Agents
 
-**Status:** Draft, grounded in the decided model (`README.md` §16). This document elaborates how AI agents run as first-class, constrained citizens. It asserts no not-yet-decided specifics.
+**Status:** Draft, grounded in the decided model ([`docs/decisions.md`](decisions.md)). This document elaborates how AI agents run as first-class, constrained citizens. It asserts no not-yet-decided specifics.
 
 ---
 
@@ -65,7 +65,7 @@ Semantic search over "everything a user has" conflicts with least privilege. Biv
 
 ---
 
-## 7. Open questions (from `README.md` §17)
+## 7. Open questions (from [`SPEC.md`](../SPEC.md) §15)
 
 - **Agent policy** — which actions always require human confirmation, and how it is expressed.
 - **Semantic indexing** — how to offer useful cross-data search without a broad-access indexer (partially addressed above; not fully resolved).

@@ -1,6 +1,6 @@
 # Bivdi — Networking
 
-**Status:** Draft, grounded in the decided model (`README.md` §16). This document elaborates the decided networking model. It asserts no not-yet-decided specifics.
+**Status:** Draft, grounded in the decided model ([`docs/decisions.md`](decisions.md)). This document elaborates the decided networking model. It asserts no not-yet-decided specifics.
 
 ---
 
@@ -42,7 +42,7 @@ Key material lives in a separate component that performs operations without rele
 
 ---
 
-## 6. Open questions (from `README.md` §17)
+## 6. Open questions (from [`SPEC.md`](../SPEC.md) §15)
 
 - **Semantic conflicts in distributed data** — which object types use CRDTs vs. explicit conflict resolution.
 - **Revocation** across the network — revocation of authority already handed out.

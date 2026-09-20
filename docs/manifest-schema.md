@@ -68,7 +68,7 @@ There are no unbounded queues; an exhausted budget degrades predictably.
 3. **Kernel-specific fields** — anything tied to the kernel capability model is blocked on the kernel decision (`P-001`).
 4. **Reproducible-build/rebuilder thresholds** — proposed, tied to the packaging/update decision.
 
-Resolution of these must be recorded as an RFC in `rfcs/` and reflected in `README.md` §16–17.
+Resolution of these must be recorded as an RFC in [`rfcs/`](../rfcs/README.md) and reflected in [`docs/decisions.md`](decisions.md) and [`SPEC.md`](../SPEC.md).
 
 ---
 

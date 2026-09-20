@@ -2,7 +2,7 @@
 
 **Status:** Authoritative for the *Decided* items. *Proposed* items are open and recorded here only for tracking.
 
-This is the single source of truth for what is and is not decided. It mirrors `README.md` §16. Any change to a decided item, or a decision resolving a proposal or an open question in `README.md` §17, must be recorded as an RFC in `rfcs/` and reflected here.
+This is the **single source of truth** for what is and is not decided. The normative specification [`SPEC.md`](../SPEC.md) is grounded in this list, and [`ARCHITECTURE.md`](../ARCHITECTURE.md) and the documents under `docs/` cite these IDs. Any change to a decided item, or a decision resolving a proposal or an open question in [`SPEC.md`](../SPEC.md) §15, must be recorded as an RFC in [`rfcs/`](../rfcs/README.md) and reflected here.
 
 ---
 
@@ -44,7 +44,7 @@ This is the single source of truth for what is and is not decided. It mirrors `R
 
 ## Open RFCs
 
-RFCs in flight. None is binding until accepted; an accepted RFC updates this file, `README.md` §16–17, and every affected document.
+RFCs in flight. None is binding until accepted; an accepted RFC updates this file, [`SPEC.md`](../SPEC.md), and every affected document.
 
 | RFC | Subject | Status |
 |---|---|---|
@@ -70,4 +70,4 @@ RFCs in flight. None is binding until accepted; an accepted RFC updates this fil
 
 - **Decided** items are binding; work that contradicts them is wrong.
 - **Proposed** items are not binding; treat them as leading options, not facts.
-- A decision that resolves a proposal or an open question updates `README.md` §16–17, this file, and any affected documents in `docs/`.
+- A decision that resolves a proposal or an open question updates this file, [`SPEC.md`](../SPEC.md), and any affected documents in `docs/`.

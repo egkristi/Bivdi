@@ -69,10 +69,10 @@ The store offers transactions, snapshots, indexes, event streams, and replicatio
 1. **On-disk encoding** — the copy-on-write layout, extent log, and epoch/root format. *(The Runtime currently persists via deterministic CBOR — `bivdi-object::save_to_path`/`load_from_path` write to a temp file, `fsync`, then atomically rename — as a provisional durable encoding per RFC 0002 §3.2; the copy-on-write on-disk layout and a WAL/crash-recovery are still open.)*
 2. **Hash algorithm** — BLAKE3 proposed, not decided.
 3. **Encryption specifics** — cipher, key derivation, and per-object granularity.
-4. **Schema evolution** — how persistent objects migrate when their types change (`README.md` §17).
+4. **Schema evolution** — how persistent objects migrate when their types change ([`SPEC.md`](../SPEC.md) §15).
 5. **Garbage collection** under memory pressure.
 
-Resolution of these must be recorded as an RFC in `rfcs/` and reflected in `README.md` §16–17.
+Resolution of these must be recorded as an RFC in [`rfcs/`](../rfcs/README.md) and reflected in [`docs/decisions.md`](decisions.md) and [`SPEC.md`](../SPEC.md).
 
 ---
 

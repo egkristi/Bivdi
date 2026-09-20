@@ -1,6 +1,6 @@
 # Bivdi — Documentation
 
-This directory holds the canonical technical documentation. Everything here is grounded in the decisions recorded in [`README.md`](../README.md) §16; the items marked *Proposed/open* are noted as such.
+This directory holds the canonical technical documentation. Everything here is grounded in the decisions recorded in [`decisions.md`](decisions.md); the items marked *Proposed/open* are noted as such. The normative specification lives at the top level in [`SPEC.md`](../SPEC.md); these files elaborate its decided model.
 
 ## What is certain vs. not
 
@@ -17,7 +17,6 @@ This directory holds the canonical technical documentation. Everything here is g
 | [`attribution.md`](attribution.md) | ✅ Present | The name, its meaning, and pronunciation. |
 | [`decisions.md`](decisions.md) | ✅ Present | Decision log (ADRs) for the decided items and the open proposals. |
 | [`glossary.md`](glossary.md) | ✅ Present | Terminology used across the project. |
-| [`spec.md`](spec.md) | 📄 Draft | Specification v0.1 — the decided model. Open: IDL, object-store mutation semantics, capability-runtime revocation. |
 | [`abi.md`](abi.md) | 📄 Draft | ABI requirements — the *decided* principles. Open: which IDL and its encoding. |
 | [`manifest-schema.md`](manifest-schema.md) | 📄 Draft | Workload manifest — the *decided* conceptual model. Open: schema/encoding, naming. |
 | [`object-store-format.md`](object-store-format.md) | 📄 Draft | Object-store model — the *decided* primitives. Open: on-disk encoding, hash algorithm. |
@@ -39,4 +38,4 @@ This directory holds the canonical technical documentation. Everything here is g
 
 ## Rule
 
-A document that asserts a not-yet-decided choice as fact is wrong. When a pending document is written, it must open by stating which open questions (from `README.md` §17) it resolves, and the resolution must be recorded as an RFC in `rfcs/` and reflected in `README.md` §16–17.
+A document that asserts a not-yet-decided choice as fact is wrong. When a pending document is written, it must open by stating which open questions (from [`SPEC.md`](../SPEC.md) §15) it resolves, and the resolution must be recorded as an RFC in [`rfcs/`](../rfcs/README.md) and reflected in [`decisions.md`](decisions.md) and [`SPEC.md`](../SPEC.md).

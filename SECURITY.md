@@ -17,7 +17,7 @@ Report security concerns as GitHub issues (see [`CONTRIBUTING.md`](CONTRIBUTING.
 ## What to report
 
 - A design that widens authority without explicit rationale.
-- A proposal that contradicts a decided item (`README.md` §16) or a core invariant.
+- A proposal that contradicts a decided item (`docs/decisions.md`) or a core invariant.
 - A flaw in the threat model's adversary/mitigation reasoning.
 - A gap between the documentation and the decided security model.
 

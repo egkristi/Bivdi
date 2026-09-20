@@ -4,7 +4,7 @@
 
 **How to read this document:** each milestone lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next milestone begins — not an aspiration. Milestones are ordered by dependency and gated by outcomes, not by schedule.
 
-**Process:** resolving an open question in `README.md` §16–17, or making any non-trivial design decision, is recorded as an RFC in `rfcs/` *before* work that depends on it begins.
+**Process:** resolving an open question in [`SPEC.md`](SPEC.md) §15, or making any non-trivial design decision, is recorded as an RFC in `rfcs/` *before* work that depends on it begins.
 
 > **A crate is not a milestone.** The Bivdi Runtime now has a crate for each of the six primitives, which is a real milestone — but a named crate is not the same as a satisfied deliverable, and an in-memory, single-process prototype is not the same as an exit gate. Work is complete when its exit condition is met, not when something exists under that name.
 
@@ -80,7 +80,7 @@ The gate has four clauses, mapped from the original Phase 0.
 7. **Give `Agent` a capability set** (`H3`) — **done**: `Agent` now holds `Vec<Capability>`; `AgentHost::grant` and `Node::grant_agent` add grants; the §3.4 scenario is one agent holding two capabilities, with the denial clauses asserted (`M4`).
 8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee). — **done as an enforced, bindable contract**: the conformance suite's `wit_world_generates_rust_bindings` test generates Rust bindings from `world bivdi-core` and asserts they parse. *(The full runtime integration — crates implementing the generated traits — remains future; the contract is now provably bindable, not just parseable.)*
 9. **Clear the overclaiming language in one pass** (`P3`/`P4`, `M2`/`M3`/`M7`/`M8`) — **done** (2026-09-20, #87/#88).
-10. **Make the other three CI jobs required** (`P2`) — **done**: all five checks (`docs`, `build/test/lint`, MSRV, security advisories, DCO) are now required. **Resolve RFC 0003's deferral** (`P8`) — **done**: `D-002` and `D-006` are now marked **parked alongside Core** in `README.md` §16 and `docs/decisions.md`.
+10. **Make the other three CI jobs required** (`P2`) — **done**: all five checks (`docs`, `build/test/lint`, MSRV, security advisories, DCO) are now required. **Resolve RFC 0003's deferral** (`P8`) — **done**: `D-002` and `D-006` are now marked **parked alongside Core** in [`SPEC.md`](SPEC.md) §3 and [`docs/decisions.md`](docs/decisions.md).
 
 **Dependencies.** None (the IDL and conformance suite are already decided — `D-015`).
 

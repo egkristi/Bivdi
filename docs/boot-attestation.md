@@ -6,7 +6,7 @@
 
 ## 1. Decided principle
 
-The boot chain is measured, and **storage is sealed to the boot measurement** (`README.md` §6). A tampered system fails to unseal, so data stays encrypted.
+The boot chain is measured, and **storage is sealed to the boot measurement** ([`SPEC.md`](../SPEC.md) §13). A tampered system fails to unseal, so data stays encrypted.
 
 ---
 

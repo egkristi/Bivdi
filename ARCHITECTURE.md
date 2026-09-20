@@ -1,8 +1,8 @@
 # Bivdi — Architecture
 
-**Status:** Concept / planning. This document is a technical sketch, not a frozen specification. Only the items marked *Decided* in `README.md` §16 are binding.
+**Status:** Implementation architecture. This document describes *how* the model is realized. The normative *what* lives in [`SPEC.md`](SPEC.md); the decided/proposed boundary lives in [`docs/decisions.md`](docs/decisions.md); the sequencing lives in [`ROADMAP.md`](ROADMAP.md). Only the items marked *Decided* are binding.
 
-**Relation to other documents:** `README.md` is the authoritative synthesis of goals and decisions. This document elaborates the technical architecture. The `temp/` workgroup files are unedited background material.
+**Relation to other documents:** [`README.md`](README.md) says what Bivdi is; [`SPEC.md`](SPEC.md) is the normative specification; this document elaborates the implementation architecture. The `temp/` workgroup files are unedited background material.
 
 > Component naming is **deferred**. This document uses generic, descriptive terms
 > ("object store", "capability runtime", "state engine", …). No codenames or

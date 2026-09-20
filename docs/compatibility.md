@@ -1,6 +1,6 @@
 # Bivdi — Compatibility
 
-**Status:** Draft, grounded in the decided model (`README.md` §16). This document elaborates how existing software runs on Bivdi without weakening the native model. It asserts no not-yet-decided specifics.
+**Status:** Draft, grounded in the decided model ([`docs/decisions.md`](decisions.md)). This document elaborates how existing software runs on Bivdi without weakening the native model. It asserts no not-yet-decided specifics.
 
 ---
 
@@ -80,7 +80,7 @@ A too-good compatibility layer risks becoming the only thing developers target (
 
 ---
 
-## 8. Open questions (from `README.md` §17)
+## 8. Open questions (from [`SPEC.md`](../SPEC.md) §15)
 
 - **Schema evolution** — affects the files-as-contracts boundary.
 - **GUI in WASI** — there is no mature standard for windows/GPU yet; wait, contribute, or define.

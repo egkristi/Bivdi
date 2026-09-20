@@ -54,7 +54,7 @@ IDENTITY + CAPABILITY + OBJECT + EVENT + DESIRED STATE + RESOURCE
 - **Events over polling** — structured, first-class events.
 - **AI without unrestricted authority** — agents are capability-constrained, time-limited, quota-bound, and fully provenance-logged.
 
-See [`README.md`](../README.md) and the [`docs/`](.) for the full model and the decided/proposed boundary.
+See [`README.md`](../README.md), [`SPEC.md`](../SPEC.md), and the [`docs/`](.) for the full model and the decided/proposed boundary.
 
 ## 5. Where the implementation stands
 

@@ -18,7 +18,7 @@ jobs:
 
       - name: Check required files exist
         run: |
-          for f in README.md AGENTS.md ARCHITECTURE.md CONTRIBUTING.md SECURITY.md ROADMAP.md; do
+          for f in README.md SPEC.md AGENTS.md ARCHITECTURE.md CONTRIBUTING.md SECURITY.md ROADMAP.md; do
             test -f "$f" || { echo "Missing required file: $f"; exit 1; }
           done
 

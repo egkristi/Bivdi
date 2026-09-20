@@ -19,4 +19,4 @@ Does this widen authority or grow the trusted computing base? If so, why?
 
 ## Related
 
-- Open question in `README.md` §16–17, or RFC (`rfcs/`):
+- Open question in `SPEC.md` §15, or RFC (`rfcs/`):
