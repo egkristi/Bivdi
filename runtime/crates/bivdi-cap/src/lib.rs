@@ -147,6 +147,16 @@ pub enum Event {
         resource: Resource,
         right: Rights,
     },
+    /// An action was attempted over a resource for which the caller held **no
+    /// capability at all** — authority was `none`, not merely insufficient.
+    /// This is the concrete form of "no flow capability" for a network connect
+    /// attempt (an endpoint is a resource; connecting is exercising `READ`
+    /// over it, per `docs/networking.md`). Recorded explicitly so a denial
+    /// never vanishes (RFC 0001 §3.4 clause 3).
+    NoCapability {
+        resource: Resource,
+        right: Rights,
+    },
 }
 
 impl Event {
@@ -156,7 +166,8 @@ impl Event {
         match self {
             Event::Minted { resource, .. }
             | Event::Acted { resource, .. }
-            | Event::Denied { resource, .. } => Some(*resource),
+            | Event::Denied { resource, .. }
+            | Event::NoCapability { resource, .. } => Some(*resource),
             Event::Attenuated { .. } | Event::Revoked { .. } => None,
         }
     }
@@ -352,6 +363,14 @@ impl CapRuntime {
         }
     }
 
+    /// Record a denial for an action attempted with **no** held capability over
+    /// `resource` — authority = none. Distinct from `record_use`'s denial,
+    /// which concerns a held capability that did not grant the requested
+    /// right. Both are explicit; neither may vanish from the log.
+    pub fn record_no_capability(&mut self, resource: Resource, right: Rights) {
+        self.record(Event::NoCapability { resource, right });
+    }
+
     fn collect_subtree(&self, root: u64, out: &mut BTreeSet<u64>) {
         if out.insert(root) {
             for (child, parent) in &self.parent {
@@ -391,6 +410,7 @@ impl CapRuntime {
                 | Event::Acted { cap: c, .. }
                 | Event::Denied { cap: c, .. } => *c == cap,
                 Event::Attenuated { from, to, .. } => *from == cap || *to == cap,
+                Event::NoCapability { .. } => false,
             })
             .cloned()
             .collect()

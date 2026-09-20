@@ -20,7 +20,7 @@ share it.
 | File | What it shows |
 |---|---|
 | `01-six-primitives.cast` | The full demo: object store (content addressing + CAS), capability runtime (attenuate/revoke/lease), state engine (generations/rollback), agent host, event bus, identity. |
-| `02-agent-scenario.cast` | The RFC 0001 §3.4 exit-gate: a leased Write agent writes, a prompt-injection "read the mailbox" is denied, and the lease expiry blocks the legitimate write — with the detailed authority provenance. |
+| `02-agent-scenario.cast` | The RFC 0001 §3.4 exit-gate: a leased agent is granted a calendar write and an email read, a prompt-injection "connect to attacker.example" is denied with `authority=none`, and the detailed authority provenance is shown. |
 | `03-persistence.cast` | Object store saved to disk (deterministic CBOR, atomic + `fsync`) and loaded back. |
 | `04-wasm.cast` | The WASI host: compile a module, call an exported function, run a WASI command with least authority. |
 | `05-sandbox.cast` | seccomp/Landlock state — reported honestly (Landlock is `unavailable` on hosts/containers that forbid it). |

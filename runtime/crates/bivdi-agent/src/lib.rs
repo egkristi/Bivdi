@@ -205,9 +205,17 @@ impl AgentHost {
         if agent.actions_used >= agent.quota.max_actions {
             return Err(AgentError::QuotaExceeded);
         }
-        // Find the capability over this resource; if none, deny.
-        let cap = agent.cap_for(resource).ok_or(AgentError::NotAuthorized)?;
-        if !self.runtime.record_use(cap, resource, required) {
+        // Find the capability over this resource; if none, deny — and record
+        // the denial explicitly (authority = none), so a "no flow capability"
+        // connect attempt is a queryable fact, never a silent drop.
+        let cap = match agent.cap_for(resource) {
+            Some(cap) => *cap,
+            None => {
+                self.runtime.record_no_capability(resource, required);
+                return Err(AgentError::NotAuthorized);
+            }
+        };
+        if !self.runtime.record_use(&cap, resource, required) {
             return Err(AgentError::NotAuthorized);
         }
         agent.actions_used += 1;
@@ -295,6 +303,13 @@ impl AgentHost {
     /// by a count.
     pub fn authority_events(&self) -> &[bivdi_cap::Event] {
         self.runtime.provenance()
+    }
+
+    /// Whether the hash-chained provenance log is intact: `true` iff no entry
+    /// has been altered, removed, or reordered. This is the tamper-evident
+    /// guarantee the operator can check, not just trust.
+    pub fn verify_provenance_chain(&self) -> bool {
+        self.runtime.verify_chain()
     }
 }
 

@@ -178,6 +178,11 @@ impl Node {
     pub fn detailed_provenance(&self) -> Vec<bivdi_cap::Event> {
         self.host.authority_events().to_vec()
     }
+
+    /// Whether the hash-chained authority log is intact (tamper-evident).
+    pub fn verify_provenance_chain(&self) -> bool {
+        self.host.verify_provenance_chain()
+    }
 }
 
 #[cfg(test)]
