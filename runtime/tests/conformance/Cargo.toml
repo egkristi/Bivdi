@@ -16,5 +16,11 @@ bivdi-runtime = { path = "../../crates/bivdi-runtime" }
 
 [dev-dependencies]
 # Validates `wit/core.wit` stays parseable — the "one contract" guarantee is
-# enforced, not asserted in prose.
-wit-parser = "0.236"
+# enforced, not asserted in prose. Pinned to the same version as wit-bindgen's
+# transitive dep so there is a single `wit_parser` in the tree.
+wit-parser = "0.258"
+# Generates Rust bindings from the WIT world and asserts they parse — the
+# contract is *bindable*, not just parseable (RFC 0002 §3.3).
+wit-bindgen-rust = "0.61"
+wit-bindgen-core = "0.61"
+syn = { version = "2", features = ["full"] }
