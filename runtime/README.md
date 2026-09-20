@@ -43,21 +43,29 @@ The object store persists in two forms: provisional JSON (`save`/`load`) and **d
 ```sh
 cargo build --workspace
 cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --all --check
+cargo audit
 ```
 
 ## Run the demo
 
 ```sh
 cargo run -p bivdi-cli                    # full six-primitive demo
-cargo run -p bivdi-cli -- persist <path>  # object-store save/load round trip
+cargo run -p bivdi-cli -- persist <path>  # object-store save/load round trip (atomic, fsync)
 cargo run -p bivdi-cli -- scenario        # RFC 0001 §3.4 agent exit-gate scenario
 cargo run -p bivdi-cli -- wasm            # compile + run a WASI module
+cargo run -p bivdi-cli -- sandbox         # report seccomp/Landlock state
 ```
 
 The `scenario` subcommand runs the Phase 1 agent-isolation exit gate end-to-end
 through the composed runtime node: an agent with a leased Write capability can
 write, a prompt-injection attempt to read an unrelated resource is denied, and
-after the lease expires even the legitimate write is denied.
+after the lease expires even the legitimate write is denied. It also prints the
+**detailed authority provenance** (Minted/Attenuated/Acted/Denied with resource
+and rights) — the operator-facing record.
+
+See [`docs/getting-started.md`](../docs/getting-started.md) for a guided walkthrough.
 
 ---
 
