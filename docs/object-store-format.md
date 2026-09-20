@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-The object store replaces the filesystem as the conceptual center of the operating system. Data lives in a typed, content-addressed graph with metadata, relationships, and version history. The filesystem survives as **one view** of the graph — a compatibility view, never the center.
+The object store replaces the filesystem as the conceptual center of the system. Data lives in a typed, content-addressed graph with metadata, relationships, and version history. The filesystem survives as **one view** of the graph — a compatibility view, never the center.
 
 ---
 

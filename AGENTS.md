@@ -4,7 +4,7 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 
 ## Project
 
-**Bivdi** — a capability-secure, object-centric, declarative operating system. The canonical overview is [`README.md`](README.md); the normative specification is [`SPEC.md`](SPEC.md); decisions and open questions live in [`docs/decisions.md`](docs/decisions.md). Read the README first.
+**Bivdi** — a capability-secure execution platform for AI agents, running on Linux today. The object-centric, declarative model is designed to outlive its substrate, and the long-term vision is an operating system built around it — but that track is parked (`D-003`), so **do not describe Bivdi as an operating system**. The canonical overview is [`README.md`](README.md); the normative specification is [`SPEC.md`](SPEC.md); decisions and open questions live in [`docs/decisions.md`](docs/decisions.md). Read the README first.
 
 > *bivdit* (North Sámi) — to ask for, to request; also to hunt, to fish.
 > In Bivdi, nothing has ambient authority. Everything must ask.
