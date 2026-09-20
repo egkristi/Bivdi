@@ -256,4 +256,39 @@ mod conformance {
             assert_eq!(&wit_flags[i], name, "flag {i} must match");
         }
     }
+
+    /// The WIT world is *bindable*, not just parseable: `wit-bindgen` can
+    /// generate Rust bindings from `world bivdi-core`, and the generated code
+    /// is syntactically valid Rust. This is the last piece of the one-contract
+    /// guarantee (RFC 0002 §3.3) — a contract that parses but cannot generate
+    /// bindings is a prose description, not an IDL.
+    #[test]
+    fn wit_world_generates_rust_bindings() {
+        use wit_bindgen_core::WorldGenerator;
+        use wit_bindgen_rust::Opts;
+
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../wit/core.wit");
+        let mut resolve = wit_parser::Resolve::new();
+        let (pkg, _) = resolve.push_path(path).expect("wit parses");
+        let world = resolve
+            .select_world(&[pkg], Some("bivdi-core"))
+            .expect("world bivdi-core exists");
+
+        let mut generator = Opts::default().build();
+        let mut files = wit_bindgen_core::Files::default();
+        generator
+            .generate(&mut resolve, world, &mut files)
+            .expect("bindings generate");
+
+        assert!(
+            files.iter().next().is_some(),
+            "at least one file must be generated"
+        );
+        for (_name, contents) in files.iter() {
+            let src = std::str::from_utf8(contents).expect("generated code is UTF-8");
+            // Parse as a Rust file: if the generated bindings are not valid
+            // Rust syntax, the contract has drifted from what bindgen expects.
+            syn::parse_file(src).expect("generated Rust bindings must parse");
+        }
+    }
 }

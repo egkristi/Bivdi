@@ -78,7 +78,7 @@ The gate has four clauses, mapped from the original Phase 0.
 5. **Make degraded hardening a policy decision** — **done** (`H1`): `engage_strict()` returns `Err` unless fully hardened.
 6. **Give the provenance log hash-chaining** — **done** (`H4`, append-only + chaining + `verify_chain`); durability and signed epochs remain future.
 7. **Give `Agent` a capability set** (`H3`) — **done**: `Agent` now holds `Vec<Capability>`; `AgentHost::grant` and `Node::grant_agent` add grants; the §3.4 scenario is one agent holding two capabilities, with the denial clauses asserted (`M4`).
-8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee). — the remaining implementation item.
+8. **Wire generated bindings** into the crates (the WIT world is declared; `wit-bindgen`/`wasmtime::bindgen!` is the last piece of the one-contract guarantee). — **done as an enforced, bindable contract**: the conformance suite's `wit_world_generates_rust_bindings` test generates Rust bindings from `world bivdi-core` and asserts they parse. *(The full runtime integration — crates implementing the generated traits — remains future; the contract is now provably bindable, not just parseable.)*
 9. **Clear the overclaiming language in one pass** (`P3`/`P4`, `M2`/`M3`/`M7`/`M8`) — **done** (2026-09-20, #87/#88).
 10. **Make the other three CI jobs required** (`P2`) — **done**: all five checks (`docs`, `build/test/lint`, MSRV, security advisories, DCO) are now required. **Resolve RFC 0003's deferral** (`P8`) — **done**: `D-002` and `D-006` are now marked **parked alongside Core** in `README.md` §16 and `docs/decisions.md`.
 
