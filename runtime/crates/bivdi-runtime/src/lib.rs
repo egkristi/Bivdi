@@ -170,6 +170,14 @@ impl Node {
             })
             .collect()
     }
+
+    /// The hash-chained authority provenance with full detail (resource, rights,
+    /// capability id) — the operator-facing record that answers "what touched
+    /// this, and what authorised each touch?" in full, not just as event-fabric
+    /// counts.
+    pub fn detailed_provenance(&self) -> Vec<bivdi_cap::Event> {
+        self.host.authority_events().to_vec()
+    }
 }
 
 #[cfg(test)]

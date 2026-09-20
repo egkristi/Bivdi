@@ -325,6 +325,12 @@ fn run_agent_scenario() {
         "  authority provenance = {} events (granted/used/denied)",
         provenance.len()
     );
+    // Operator-facing UX: the detailed, hash-chained authority log answers
+    // "what touched what, and what authorised each touch?" in full.
+    println!("\n  == authority provenance (detailed) ==");
+    for ev in node.detailed_provenance() {
+        println!("    {ev:?}");
+    }
     println!();
 }
 

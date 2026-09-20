@@ -288,6 +288,14 @@ impl AgentHost {
     pub fn provenance_len(&self) -> usize {
         self.runtime.provenance().len()
     }
+
+    /// The hash-chained authority provenance log, with full detail (resource,
+    /// rights, capability ids). This is the operator-facing record: "what
+    /// touched this, and what authorised each touch?" answered by the log, not
+    /// by a count.
+    pub fn authority_events(&self) -> &[bivdi_cap::Event] {
+        self.runtime.provenance()
+    }
 }
 
 #[cfg(test)]
