@@ -1,6 +1,6 @@
 # Bivdi — Roadmap
 
-**Status:** The **Bivdi Runtime is the product** (`D-003`). Phase 0 and the Runtime half of Phase 1 are implemented and runnable. The microkernel **Bivdi Core** is a parked research track; the kernel choice (`P-001`) is deferred indefinitely. This roadmap sequences the product (Milestones A–C) and records the parked track without letting it gate any deliverable.
+**Status:** The **Bivdi Runtime is the product** (`D-003`). Phase 0 and the Runtime half of Phase 1 are implemented and runnable. The microkernel **Bivdi Core** is a parked research track; the kernel choice (`P-001`) is deferred indefinitely. This roadmap sequences the product (Milestones A–D) and records the parked track without letting it gate any deliverable.
 
 **How to read this document:** each milestone lists its *goal*, *scope*, *deliverables*, *exit gate*, and *dependencies*. An exit gate is the objective, measurable condition that must be met before the next milestone begins — not an aspiration. Milestones are ordered by dependency and gated by outcomes, not by schedule.
 
@@ -128,6 +128,30 @@ The gate has four clauses, mapped from the original Phase 0.
 
 ---
 
+## Milestone D — Performance: the isolation tax, measured
+
+**Goal.** Answer the question the Runtime cannot yet answer: *"How much does the security model cost?"* Performance is a first-class attribute (`D-011`) with reference targets in [`docs/performance.md`](docs/performance.md) §2 and [`ARCHITECTURE.md`](ARCHITECTURE.md) §20 — but those targets are **proposed and unratified**, and there are no benchmarks demonstrating any of them. This milestone turns "performance is first-class" from a principle into a measurement.
+
+**Scope.** A reproducible microbenchmark harness over the six primitive hot paths a capability-secure request touches, run at realistic rates and recorded honestly — platform and toolchain named, never cherry-picked (the RFC 0003 "never overclaim" principle applied to performance claims).
+
+**Deliverables**
+
+- A benchmark harness (criterion-style) covering the six paths, with the units a reader actually asks for:
+  - **capability check** — `CapRuntime::check`, reported in **M/sec**.
+  - **provenance event** — `record_use` plus hash-chaining, reported in **events/sec**.
+  - **object read** — `Store::get_blob` / `catalog_get`, reported in **ops/sec**.
+  - **agent action** — `AgentHost::execute` (lease + quota + authority + provenance), reported in **µs overhead** per action.
+  - **WASI call** — `WasiRuntime::call_i32_i32`, reported in **µs overhead** per call.
+  - **network authorization** — `NetService::resolve` / `grant_flow`, reported in **µs** per authorization.
+- A published results table with the platform and toolchain stated next to every number (never a bare figure).
+- The reference targets in [`docs/performance.md`](docs/performance.md) §2 **ratified** and turned into CI gates: a regression past the budget fails CI, exactly as [`ARCHITECTURE.md`](ARCHITECTURE.md) §20 already requires.
+
+**Exit gate.** One command runs the benchmark suite and prints the six numbers above; the numbers are reproducible on the stated platform; and CI enforces the ratified budget on the committed reference platform. "How much does the security model cost?" is answerable from the output alone.
+
+**Dependencies.** Milestone C (the Runtime is shippable and its primitive APIs are stable enough to time meaningfully).
+
+---
+
 ## Parked: Bivdi Core (research track)
 
 The microkernel Core is deferred research (`D-003`, `P-001` deferred). These items are **cut from the critical path** and recorded only so the option stays legible if the track is reactivated:
@@ -155,6 +179,7 @@ These run across multiple milestones and are not tied to a single gate.
 | **Verification & assurance** | A → C | Fuzzing from day one; model-checking of capability derivation; never overclaim. |
 | **Documentation & SDK** | A → C | The SDK needs excellent docs to be adopted; bindings generated from WIT. |
 | **Governance** | A → C | Stage 1: technical lead + public RFC process. Stage 2 (post-1.0): elected technical steering committee; foundation holds trademark/domain. |
+| **Performance** | A → D | Microbenchmarks from day one; the proposed targets in `docs/performance.md` become ratified CI gates in D; never overclaim a number. |
 | **Naming** | A → B | Component naming decision. |
 
 ---
@@ -168,6 +193,7 @@ These run across multiple milestones and are not tied to a single gate.
 | **Prompt injection / compromised agent** | High | The Milestone B scenario makes the mitigation testable, not asserted |
 | **Powerbox usability** | High | Deferred — the agent host is headless and operator-facing; a negative result on the desktop track changes the design, not the narrative |
 | **Overclaiming assurance** | High | "Verification-oriented" until proven; published audits including unfixed findings. The 2026-09-20 audit (`temp/audit-2026-09-20.md`) is the first such audit and its unfixed findings are tracked in the Milestone A list above. |
+| **Performance unproven / isolation tax unknown** | High | The reference targets are proposed, not ratified, and no benchmark demonstrates them — the Runtime cannot yet answer "how much does the security model cost?". Milestone D turns the principle into a measurement before anyone claims an isolation cost. |
 | **Recurring authority-defect pattern** — a function mints/attenuates authority for a caller holding nothing | High | Four instances found across two reviews (`AgentHost::spawn`, `grant_identity_capability`, `NetService::resolve`, `grant_flow`). Mitigation: make `CapRuntime::mint` require an explicit owner token so the class is closed, not re-fixed per instance. |
 | **seL4 licensing interaction** (seL4 is GPLv2-only) | Medium | Relevant only if Core is reactivated; open core (D-012) already isolates seL4 behind published interfaces |
 
