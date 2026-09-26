@@ -117,7 +117,7 @@ dependencies = [
  "bivdi-object",
  "bivdi-runtime",
  "bivdi-state",
- "syn 2.0.119",
+ "syn 3.0.6",
  "wit-bindgen-core",
  "wit-bindgen-rust",
  "wit-parser 0.258.0",

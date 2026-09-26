@@ -23,4 +23,4 @@ wit-parser = "0.258"
 # contract is *bindable*, not just parseable (RFC 0002 §3.3).
 wit-bindgen-rust = "0.61"
 wit-bindgen-core = "0.61"
-syn = { version = "2", features = ["full"] }
+syn = { version = "3", features = ["full"] }
