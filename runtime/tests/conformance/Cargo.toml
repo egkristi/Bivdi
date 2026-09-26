@@ -21,6 +21,6 @@ bivdi-runtime = { path = "../../crates/bivdi-runtime" }
 wit-parser = "0.258"
 # Generates Rust bindings from the WIT world and asserts they parse — the
 # contract is *bindable*, not just parseable (RFC 0002 §3.3).
-wit-bindgen-rust = "0.61"
+wit-bindgen-rust = "0.62"
 wit-bindgen-core = "0.61"
 syn = { version = "2", features = ["full"] }
